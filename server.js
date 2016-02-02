@@ -9,7 +9,7 @@ var express    = require('express');        // call express
 var app        = express();                 // define our app using express
 var bodyParser = require('body-parser');
 var base64 = require('node-base64-image');
-//var multer = require('multer');
+var request = require('request');
 
 app.use('/img', express.static('img'));
 
@@ -27,13 +27,33 @@ var router = express.Router();              // get an instance of the express Ro
 
 router.use(function(req, res, next) {
     // do logging
-    console.log('received!');//'body:%j', req.body);
+    console.log('received : '+req.originalUrl);//'body:%j', req.body);
     next(); // make sure we go to the next routes and don't stop here
 });
 
-var postLimit = 5
 
-router.route('/post')
+router.get('/instagram/login',function(req, res){
+    console.log('code:',req.query.code);
+    request.post( 'https://api.instagram.com/oauth/access_token',
+        { form: 
+            { 
+                client_id: 'ea2679a4073c4809919836b18e91b257',
+                client_secret : '87e2890a23fd4defb7fc2cfc76f43d15',
+                grant_type : 'authorization_code',
+                redirect_uri : 'http://ec2-52-21-52-152.compute-1.amazonaws.com:8080/api/instagram/login',
+                code : req.query.code
+            } 
+        },
+        function (error, response, body) {
+                console.log(body)
+        }
+    );
+    res.json(req.query)
+})
+
+
+var postLimit = 5
+router.route('/post/')
     // add new post
     .post(function(req, res) {
         var post = req.body;
