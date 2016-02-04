@@ -12,7 +12,7 @@ var base64 = require('node-base64-image');
 var request = require('request');
 
 app.use('/img', express.static('img'));
-
+app.use(express.static(process.cwd() + '/public'));
 // configure app to use bodyParser()
 // this will let us get the data from a POST
 app.use(bodyParser.json({limit: '50mb'}));
@@ -46,9 +46,9 @@ router.get('/instagram/login',function(req, res){
         },
         function (error, response, body) {
                 console.log(body)
+                res.json(body);
         }
     );
-    res.json(req.query)
 })
 
 
