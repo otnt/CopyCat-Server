@@ -2,9 +2,13 @@
 
 ## How to use
 1.(run this ONCE)
+
 `mongod` Make sure MongoDB is running at 127.0.0.1:27017
+
 `cd database`
+
 `node test_populate.js`
+
 This will populate some test data to MongoDB `test` database.
 
 2.In root folder, `node server.js` to run server
