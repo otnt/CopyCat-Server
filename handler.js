@@ -14,8 +14,28 @@ var photoIdListPopulate = {
 
 //hot
 exports.promosHot = function(req, res) {
+  var queryCondition = {};
+  var maxId = req.query.maxId;
+  var sinceId = req.query.sinceId;
+  var count = req.query.count;
+  count = (count && !isNaN(parseInt(count))) ?
+  (count > 200 ? 200 : parseInt(count)) : 20;
+  if(maxId) {
+    if(!queryCondition._id) {
+      queryCondition._id = {};
+    }
+    queryCondition._id['$lt'] = maxId;
+  }
+  if(sinceId) {
+    if(!queryCondition._id) {
+      queryCondition._id = {};
+    }
+    queryCondition._id['$gt'] = sinceId;
+  }
   Album
-  .find()
+  .find(queryCondition)
+  .sort({_id:-1})
+  .limit(count)
   .populate(photoIdListPopulate)
   .exec(function(err, albums){
     res.send(albums);
@@ -24,7 +44,7 @@ exports.promosHot = function(req, res) {
 
 //editor's choice
 exports.promosEditor = function(req, res) {
-  var id = req.params.id;
+  var id = req.query.id;
   if(id) {
     Editor.findById(id, function(err, editor){
       editor.populate('albumIdList', function(err, editor) {
@@ -65,7 +85,7 @@ exports.albums= function(req, res) {
 exports.photos= function(req, res) {
   var id = req.params.id;
   if(id) {
-    Photo.find({_id: id}, function(err, photo) {
+    Photo.findById(id}, function(err, photo) {
       res.send(photo);
     })
   }

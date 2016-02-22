@@ -9,6 +9,7 @@ module.exports = mongoose.model('Photo',
       imageUrl: {type: String, required: true},
       referenceId: {type: ObjectId, ref: 'Photo'},
       ownerId: {type: ObjectId, ref: 'User', required: true},
-      tagList: [String]
+      tagList: [String],
+      time : { type : Date, default: Date.now, required: true}
   })
 );

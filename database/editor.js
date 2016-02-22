@@ -7,6 +7,7 @@ var ObjectId = mongoose.Schema.ObjectId;
 module.exports = mongoose.model('Editor', 
   mongoose.Schema({
       name: String,
-      albumIdList: [{type: ObjectId, ref: 'Album'}]
+      albumIdList: [{type: ObjectId, ref: 'Album'}],
+      time : { type : Date, default: Date.now, required: true}
   })
 );
