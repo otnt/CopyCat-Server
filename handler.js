@@ -18,8 +18,11 @@ exports.promosHot = function(req, res) {
   var maxId = req.query.maxId;
   var sinceId = req.query.sinceId;
   var count = req.query.count;
-  count = (count && !isNaN(parseInt(count))) ?
-  (count > 200 ? 200 : parseInt(count)) : 20;
+  if(count && isNaN(parseInt(count))) {
+    errHandle.badRequest(res, "count should be numeric but is " + count);
+    return;
+  }
+  count = count ? (count > 200 ? 200 : count) : 20;
   if(maxId) {
     if(!queryCondition._id) {
       queryCondition._id = {};
@@ -35,10 +38,15 @@ exports.promosHot = function(req, res) {
   Album
   .find(queryCondition)
   .sort({_id:-1})
-  .limit(count)
+  .limit(parseInt(count))
   .populate(photoIdListPopulate)
   .exec(function(err, albums){
-    res.send(albums);
+    if(err) {
+      errHandle.unknown(res, err);
+    }
+    else{
+      res.send(albums);
+    }
   })
 }
 
@@ -47,8 +55,12 @@ exports.promosEditor = function(req, res) {
   var id = req.query.id;
   if(id) {
     Editor.findById(id, function(err, editor){
+      if(err) return errHandle.unknown(res, err);
+      if(!editor) return errHandle.notFound(res, err);
       editor.populate('albumIdList', function(err, editor) {
+        if(err) return errHandle.unknown(res, err);
         editor.populate(photoIdListPopulate, function(err, editor) {
+          if(err) return errHandle.unknown(res, err);
           res.send(editor);
         })
       })
@@ -59,6 +71,8 @@ exports.promosEditor = function(req, res) {
     .findOne()
     .populate('albumIdList')
     .exec(function(err, editor) {
+      if(err) return errHandle.unknown(res, err);
+      if(!editor) return errHandle.notFound(res, err);
       editor.populate(photoIdListPopulate, function(err, editor) {
         res.send(editor);
       })
@@ -69,27 +83,33 @@ exports.promosEditor = function(req, res) {
 //album
 exports.albums= function(req, res) {
   var id = req.params.id;
-  if(id) {
-    Album.findById(id)
-    .populate(photoIdListPopulate)
-    .exec(function(err, album) {
-      res.send(album);
-    })
-  }
-  else {
-    res.send("no id");
-  }
+  Album.findById(id)
+  .populate(photoIdListPopulate)
+  .exec(function(err, album) {
+    if(err) return errHandle.unknown(res, err);
+    if(!album) return errHandle.notFound(res, err);
+    res.send(album);
+  })
 }
 
 //photo
 exports.photos= function(req, res) {
   var id = req.params.id;
-  if(id) {
-    Photo.findById(id}, function(err, photo) {
-      res.send(photo);
-    })
-  }
-  else {
-    res.send("no id");
-  }
+  Photo.findById(id, function(err, photo) {
+    if(err) return errHandle.unknown(res, err);
+    if(!photo) return errHandle.notFound(res, err);
+    res.send(photo);
+  })
+}
+
+//err handling
+var errHandle = function() {}
+errHandle.notFound = function(res, err) {
+  res.status(404).send({'errCode':404, 'errMsg' : "Not found: " + err});
+};
+errHandle.unknown = function(res, err) {
+  res.send({'errMsg':"Unknown error: " + err});
+};
+errHandle.badRequest = function(res, err) {
+  res.status(400).send({'errCode':400, 'errMsg': "Bad request: " + err});
 }
