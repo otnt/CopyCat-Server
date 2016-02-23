@@ -1,9 +1,11 @@
 'use strict';
+
 var db = require("./database/database.js");
 var User = require("./database/user.js");
 var Photo = require("./database/photo.js");
 var Album = require("./database/album.js");
 var Editor = require("./database/editor.js");
+var PythonShell = require('python-shell');
 
 var prefetchPhotoNumber = 10;
 var photoIdListPopulate = {
@@ -100,6 +102,22 @@ exports.photos= function(req, res) {
     if(!photo) return errHandle.notFound(res, err);
     res.send(photo);
   })
+}
+
+//labels
+exports.labels = function(req, res) {
+  var imageUrl = req.query.url;
+
+  var options = {
+    scriptPath: './python_modules/',
+    args: ['AIzaSyC65J_eyq6ZmSK5s_OIFzH8srQsL17NdHs', imageUrl]
+  };
+  
+  PythonShell.run('google_vision_label_detection.py', options, function (err, results) {
+    if (err) return errHandle.unknown(res, err);
+    results = JSON.parse(results);
+    res.send(results);
+  });
 }
 
 //err handling
