@@ -13,3 +13,4 @@ module.exports = mongoose.model('Album',
       time : { type : Date, default: Date.now, required: true}
   })
 );
+
