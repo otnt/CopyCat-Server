@@ -3,7 +3,7 @@
 var express = require("express");
 var router = express.Router();
 var models = require("../../database/v0/models.js");
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
 
 var helper = require("./helper.js");
 var errHandle = helper.errHandle;
@@ -41,10 +41,10 @@ router.route('/')
 
     if(!imageUrl) return errHandle.badRequest(res, "Need imageUrl for photo");
 
-    models.Photo.create(data, function(err, album) {
+    models.Photo.create(data, function(err, photo) {
       if(err) return errHandle.unknown(res, err);
       res.statusCode = 201;
-      res.send(album);
+      res.send(photo);
     });
   }
 

@@ -3,6 +3,7 @@
 var express = require("express");
 var router = express.Router();
 var models = require("../../database/v0/models.js");
+var bodyParser = require('body-parser');
 
 var helper = require("./helper.js");
 var photoIdListPopulate = helper.photoIdListPopulate;
@@ -76,6 +77,19 @@ router.route('/editor')
       })
     })
   }
+}) 
+.post(bodyParser.json(), function(req, res, next) {
+    var data = req.body;
+    var name = data.name;
+    var albumIdList = data.albumIdList;
+
+    if(!name) return errHandle.badRequest(res, "Need name for editor choice");
+
+    models.Editor.create(data, function(err, editor) {
+      if(err) return errHandle.unknown(res, err);
+      res.statusCode = 201;
+      res.send(editor);
+    });
 });
 
 module.exports = router;
