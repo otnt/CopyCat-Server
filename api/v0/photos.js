@@ -18,9 +18,9 @@ router.route('/:id')
   })
 });
 
-router.use('/', bodyParser.json());
 router.route('/')
-.post(function(req, res, next) {
+.post(bodyParser.json(),
+function(req, res, next) {
   var fakeUserId;
 
   var getFakeUserId = function() {
@@ -34,6 +34,7 @@ router.route('/')
   var postPhoto = function() {
     var data = req.body;
     var imageUrl = data.imageUrl;
+    
     var referenceId = data.referenceId;
     //var ownerId = fakeUserId;
     data.ownerId = fakeUserId;
