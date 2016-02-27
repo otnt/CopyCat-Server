@@ -37,8 +37,8 @@ db.once('open', function() {
       }, function(err, photo) {
         errHandle(err);
         photoIdList.push(photo._id);
-        console.log(photo);
-        if(i === fakePhotoNum - 1) {
+        console.log("%j", photo);
+        if(photoIdList.length === fakePhotoNum) {
           createAlbums();
         }
       });
@@ -61,8 +61,8 @@ db.once('open', function() {
       }, function(err, album) {
         errHandle(err);
         albumIdList.push(album._id);
-        console.log(album);
-        if(i === fakeAlbumNum - 1) {
+        console.log("%j", album);
+        if(albumIdList.length === fakeAlbumNum) {
           createEditorChoice();
         }
       });
