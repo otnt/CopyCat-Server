@@ -33,11 +33,12 @@ router.route('/hot')
     }
     queryCondition._id['$gt'] = sinceId;
   }
-  console.log("count " + parseInt(count));
+  console.log("count " + count);
   models.Album
-  .find(queryCondition)
+  //.find(queryCondition)
+  .find()
   .sort({_id:-1})
-  .limit(parseInt(count))
+  .limit(5)//parseInt(count))
   .populate(photoIdListPopulate)
   .exec(function(err, albums){
     if(err) {
