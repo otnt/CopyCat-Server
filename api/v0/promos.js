@@ -33,6 +33,7 @@ router.route('/hot')
     }
     queryCondition._id['$gt'] = sinceId;
   }
+  console.log("count " + parseInt(count));
   models.Album
   .find(queryCondition)
   .sort({_id:-1})
