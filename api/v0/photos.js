@@ -74,7 +74,7 @@ router.use(bodyParser.json({limit: '50mb'}));
 router.route('/')
 .post(function(req, res, next) {
   var buf = req.body.data;
-  if(!buf) return errHandle.badRequest(res, "Need image data");
+  //if(!buf) return errHandle.badRequest(res, "Need image data");
 
   var fakeUserId;
   var getFakeUserId = function() {
@@ -91,7 +91,14 @@ router.route('/')
 
     models.Photo.create(data, function(err, photo) {
       if(err) return errHandle.unknown(res, err);
-      uploadImage(''+photo._id, updatePhoto);
+      //put image info and data at same time
+      if(buf) {
+        uploadImage(''+photo._id, updatePhoto);
+      }
+      //first post image, then put data
+      else {
+        complete(null, photo);
+      }
     });
   }
 
@@ -124,12 +131,13 @@ router.route('/')
     );
   }
 
-  var complete = function(err, p) {
+  var complete = function(err, photo) {
     if(err) return errHandle.unknown(res, err);
     res.statusCode = 201;
-    res.send(p);
+    res.send(photo);
   }
 
   getFakeUserId();
 });
 module.exports = router;
+
