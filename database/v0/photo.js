@@ -11,7 +11,7 @@ module.exports = mongoose.model('Photo',
       ownerId: {type: ObjectId, ref: 'User', required: true},
       tagList: [String],
       time : { type : Date, default: Date.now, required: true},
-      length:{type:Number},
+      height:{type:Number},
       width:{type:Number}
   })
 );

@@ -70,14 +70,15 @@ router.route('/')
     models.Photo.findByIdAndUpdate(
       id, 
       { $set: { imageUrl : url}},
+      {new : true},//set true to return modified data
       complete
     );
   }
 
-  var complete = function(err, photo) {
+  var complete = function(err, p) {
     if(err) return errHandle.unknown(res, err);
     res.statusCode = 201;
-    res.send(photo);
+    res.send(p);
   }
 
   getFakeUserId();
