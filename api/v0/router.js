@@ -6,6 +6,7 @@ var promos = require("./promos.js");
 var albums = require("./albums.js");
 var photos = require("./photos.js");
 var labels = require("./labels.js");
+var timeline = require("./timeline.js");
 
 router.use(function(req, res, next) {
   console.log(Date.now() + " " + req.originalUrl);
@@ -16,5 +17,6 @@ router.use('/promos', promos);
 router.use('/albums', albums);
 router.use('/photos', photos);
 router.use('/labels', labels);
+router.use('/timeline', timeline);
 
 module.exports = router;

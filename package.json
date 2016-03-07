@@ -13,6 +13,8 @@
     "express": "^4.13.4",
     "mongoose" : "^4.4.4",
     "python-shell": "^0.3.0",
-    "body-parser": "^1.15.0"
+    "body-parser": "^1.15.0",
+    "aws-sdk" : "^2.2.41",
+    "request" : "^2.67.0"
   }
 }
