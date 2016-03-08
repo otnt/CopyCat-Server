@@ -7,6 +7,19 @@ module.exports.photoIdListPopulate = {
   options: {limit : prefetchPhotoNumber}
 }
 
+module.exports.assertHeader = function(actual, wanted, name, res) {
+  console.log(wanted);
+  console.log(actual);
+  console.log(wanted.split("|").indexOf(actual));
+  if((wanted !== '*') && (wanted.split("|").indexOf(actual) === -1)) {
+    res.status(400).send({'errCode':400, 'errMsg':"Bad request: " + 
+          name + " should be '" + wanted + "' but got " + "'" + actual + "'"
+    });
+    return false;
+  }
+  return true;
+}
+
 //err handling
 var errHandle = function() {}
 errHandle.notFound = function(res, err) {
