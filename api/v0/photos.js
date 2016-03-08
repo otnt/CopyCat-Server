@@ -54,7 +54,6 @@ function(req, res, next) {
     s3.upload(params)
     .send(function(err, data) {
       if (err) return errHandle.unknown(res, err);
-      console.log(data);
       updatePhoto(data.Location);
     });
   }
