@@ -73,11 +73,11 @@ router.route('/:id/stream')
   getFakeUserId();
 });
 
-router.use(bodyParser.json({limit: '50mb'}));
+router.use(bodyParser.json({limit: '5mb'}));
 router.route('/')
 .post(function(req, res, next) {
   var buf = req.body.data;
-  //if(!buf) return errHandle.badRequest(res, "Need image data");
+  if(!buf) return errHandle.badRequest(res, "missing data part in request");
 
   var fakeUserId;
   var getFakeUserId = function() {
@@ -95,15 +95,8 @@ router.route('/')
 
     models.Photo.create(data, function(err, photo) {
       if(err) return errHandle.unknown(res, err);
-      //put image info and data at same time
-      if(buf) {
-        key = '' + photo._id;
-        compress();
-      }
-      //first post image, then put data
-      else {
-        complete(null, photo);
-      }
+      key = '' + photo._id;
+      compress();
     });
   }
 
@@ -134,7 +127,7 @@ router.route('/')
 
   var updatePhoto = function(id, url) {
     models.Photo.findByIdAndUpdate(
-      id, 
+      id,
       { $set: { imageUrl : url}},
       {new : true},//set true to return modified data
       complete
