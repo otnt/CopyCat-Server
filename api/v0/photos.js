@@ -102,32 +102,37 @@ router.route('/')
 
   var compress = function() {
     //get base64 data
-    buf = new Buffer(buf, 'base64').toString('byte');
+    buf = new Buffer(buf, 'base64');
 
-    gm(buf, 'buffer')
-    .thumb(800, 600, './' + key, 80, uploadImage);
+    gm(buf, 'img')
+    .resize(800, 600)
+    .quality(80)
+    .toBuffer('JPF', function(err, buffer) {
+      if(err) return errHandle.unknown(res, err);
+      uploadImage(buffer);
+    })
   }
 
-  var uploadImage = function(err, stdout, stderr, command) {
+  var uploadImage = function(buffer) {
     var params = {
       Bucket: 'copycatimage',
-      Key: fs.createReadStream(),
+      Key: key,
       ACL: 'public-read',
-      Body: buf,
-      ContentEncoding: 'base64',
-      ContentLength: buf.length,
+      Body: buffer,
+      ContentLength: buffer.length,
       ContentType: 'image/jpeg'
     };
+    console.log("yo4");
     s3.upload(params)
     .send(function(err, data) {
       if (err) return errHandle.unknown(res, err);
-      uploadPhoto(data.key, data.Location);
+      uploadPhoto(data.Location);
     });
   }
 
-  var updatePhoto = function(id, url) {
+  var updatePhoto = function(url) {
     models.Photo.findByIdAndUpdate(
-      id,
+      key,
       { $set: { imageUrl : url}},
       {new : true},//set true to return modified data
       complete

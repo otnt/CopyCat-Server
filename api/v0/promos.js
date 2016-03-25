@@ -35,10 +35,10 @@ router.route('/hot')
   }
   console.log("count " + count);
   models.Album
-  //.find(queryCondition)
+  .find(queryCondition)
   .find()
   .sort({_id:-1})
-  .limit(5)//parseInt(count))
+  .limit(parseInt(count))
   .populate(photoIdListPopulate)
   .exec(function(err, albums){
     if(err) {
