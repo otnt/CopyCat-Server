@@ -12,6 +12,7 @@ var base64 = require('base64-stream');
 var zlib = require('zlib');
 
 var helper = require("./helper.js");
+var assertHeader = helper.assertHeader;
 var errHandle = helper.errHandle;
 
 var fs = require('fs')
@@ -76,8 +77,10 @@ router.route('/:id/stream')
 router.use(bodyParser.json({limit: '5mb'}));
 router.route('/')
 .post(function(req, res, next) {
-  var buf = req.body.data;
-  if(!buf) return errHandle.badRequest(res, "missing data part in request");
+  assertHeader(req, res, 'content-type', 'application/json');
+
+  var data = req.body.data;
+  if(!data) return errHandle.badRequest(res, 'missing data part in request');
 
   var fakeUserId;
   var getFakeUserId = function() {
@@ -90,10 +93,11 @@ router.route('/')
 
   var key;
   var postPhoto = function() {
-    var data = req.body;
-    data.ownerId = fakeUserId;
+    var photo = req.body;
+    photo.ownerId = fakeUserId;
+    delete photo.data
 
-    models.Photo.create(data, function(err, photo) {
+    models.Photo.create(photo, function(err, photo) {
       if(err) return errHandle.unknown(res, err);
       key = '' + photo._id;
       compress();
@@ -102,12 +106,12 @@ router.route('/')
 
   var compress = function() {
     //get base64 data
-    buf = new Buffer(buf, 'base64');
+    data = new Buffer(data, 'base64');
 
-    gm(buf, 'img')
+    gm(data, 'img')
     .resize(800, 600)
     .quality(80)
-    .toBuffer('JPF', function(err, buffer) {
+    .toBuffer('JPG', function(err, buffer) {
       if(err) return errHandle.unknown(res, err);
       uploadImage(buffer);
     })
@@ -122,21 +126,24 @@ router.route('/')
       ContentLength: buffer.length,
       ContentType: 'image/jpeg'
     };
-    console.log("yo4");
     s3.upload(params)
     .send(function(err, data) {
       if (err) return errHandle.unknown(res, err);
-      uploadPhoto(data.Location);
+      updatePhoto(data.Location);
     });
   }
 
   var updatePhoto = function(url) {
-    models.Photo.findByIdAndUpdate(
-      key,
-      { $set: { imageUrl : url}},
-      {new : true},//set true to return modified data
-      complete
-    );
+    gm(data, 'img')
+    .size(function(err, size) {
+      if(err) return errHandle.unknown(res, err);
+      models.Photo.findByIdAndUpdate(
+        key,
+        { $set: { imageUrl : url, width: size.width, height: size.height}},
+        {new : true},//set true to return modified data
+        complete
+      );
+    })
   }
 
   var complete = function(err, photo) {

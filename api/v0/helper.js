@@ -7,7 +7,8 @@ module.exports.photoIdListPopulate = {
   options: {limit : prefetchPhotoNumber}
 }
 
-module.exports.assertHeader = function(actual, wanted, name, res) {
+module.exports.assertHeader = function(req, res, name, wanted) {
+  var actual = req.get(name);
   if((wanted !== '*') && (wanted.split("|").indexOf(actual) === -1)) {
     res.status(400).send({'errCode':400, 'errMsg':"Bad request: " + 
           name + " should be '" + wanted + "' but got " + "'" + actual + "'"
