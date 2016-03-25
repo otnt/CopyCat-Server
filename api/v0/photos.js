@@ -1,12 +1,10 @@
-'use strict';
-
-var express = require("express");
-var router = express.Router();
-var models = require("../../database/v0/models.js");
-var bodyParser = require('body-parser');
-var AWS = require('aws-sdk');
+const express = require("express");
+const router = express.Router();
+const models = require("../../database/v0/models.js");
+const bodyParser = require('body-parser');
+const AWS = require('aws-sdk');
 AWS.config.loadFromPath('./crenditial.json');
-var s3 = new AWS.S3();
+const s3 = new AWS.S3();
 
 var helper = require("./helper.js");
 var errHandle = helper.errHandle;
