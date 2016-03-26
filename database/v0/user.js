@@ -1,5 +1,6 @@
 'use strict';
 var mongoose = require('mongoose');
+mongoose.Promise = require('bluebird');
 var db = require('./database.js');
 
 module.exports = mongoose.model('User', 

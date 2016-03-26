@@ -7,8 +7,44 @@
 var prefetchPhotoNumber = 10;
 module.exports.photoIdListPopulate = {
   path: 'photoIdList',
-  select: '_id imageUrl ownerId',
-  options: {limit : prefetchPhotoNumber}
+  options: {limit : prefetchPhotoNumber},
+}
+
+/**
+ * Timeline style query parameters
+ */
+module.exports.getTimelineStyleQuery = function getTimelineStyleQuery(query, log, res) {
+ var queryCondition = {};
+
+ //count
+ var count = query.count;
+ if(count && isNaN(parseInt(count))) {
+   var msg = "count should be numeric but is " + count;
+   errHandle.badRequest(res, msg);
+   log.warn(msg);
+   return;
+ }
+ queryCondition.count = count ? (count > 200 ? 200 : parseInt(count)) : 20;
+
+ //maxId
+ var maxId = query.maxId;
+ if(maxId) {
+   if(!queryCondition.range._id) {
+     queryCondition.range._id = {};
+   }
+   queryCondition.range._id['$lt'] = maxId;
+ }
+
+ //sinceId
+ var sinceId = query.sinceId;
+ if(sinceId) {
+   if(!queryCondition.range._id) {
+     queryCondition.range._id = {};
+   }
+   queryCondition.range._id['$gt'] = sinceId;
+ }
+
+ return queryCondition;
 }
 
 /**

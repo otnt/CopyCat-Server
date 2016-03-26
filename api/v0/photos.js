@@ -15,7 +15,7 @@ var Promise = require("bluebird");
  */
 var AWS = require('aws-sdk');
 AWS.config.loadFromPath('./crenditial.json');
-var s3 = Promise.promisifyAll(new AWS.S3());
+var s3 = new AWS.S3();
 
 /**
  * helper functions and objects
@@ -28,7 +28,6 @@ var PromiseReject = helper.PromiseReject;
 /**
  * log objects and functions
  */
-var log = helper.log;
 var logReq = helper.logReq;
 var logRes = helper.logRes;
 var logReqIdMiddleware = helper.logReqIdMiddleware;
@@ -37,7 +36,7 @@ var logReqIdMiddleware = helper.logReqIdMiddleware;
  * compress image
  */
 var fs = require('fs')
-, gm = Promise.promisifyAll(require('gm').subClass({imageMagick: true}));
+, gm = require('gm').subClass({imageMagick: true});
 
 /**
  * Add reqId to each request
