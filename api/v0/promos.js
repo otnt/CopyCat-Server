@@ -84,6 +84,16 @@ router.route('/editor')
 .get(function(req, res, next) {
   logReq(req.log, req);
 
+  //TODO Now we just return a random editor, this may
+  //need to fix. For now, we are not clear how this
+  //feature will work, so this is okay.
+  models.Editor
+  .findOne()
+  .populate('albumIdList')
+
+  /*
+   * This is potentially better way to do this
+   *
   //get query
   helper.getTimelineStyleQuery({
       count:req.query.count, 
@@ -102,6 +112,7 @@ router.route('/editor')
     .limit(queryCondition.count)
     .populate('albumIdList');
   })
+  */
 
   //respond
   .then(function respond(editors) {
