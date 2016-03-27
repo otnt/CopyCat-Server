@@ -11,6 +11,12 @@ var bodyParser = require('body-parser');
 var helper = require("./helper.js");
 var photoIdListPopulate = helper.photoIdListPopulate;
 var errHandle = helper.errHandle;
+var PromiseReject = helper.PromiseReject;
+
+/**
+ * Bluebird made promise easy
+ */
+var Promise = require("bluebird");
 
 /**
  * log objects and functions
@@ -31,34 +37,41 @@ router.use(logReqIdMiddleware);
  */
 router.route('/hot')
 .get(function(req, res, next) {
-  try{
-    logReq(req.log, req);
+  logReq(req.log, req);
 
-    var queryCondition = helper.getTimelineStyleQuery({
-        count:req.query.count, 
-        maxId:req.query.maxId, 
-        sinceId:req.query.sinceId
+  //getQueryCondition
+  helper.getTimelineStyleQuery({
+      count:req.query.count, 
+      maxId:req.query.maxId, 
+      sinceId:req.query.sinceId
     },
     req.log,
-    res);
-    req.log.info({queryCondition: queryCondition}, 'Fetching timeline using query specification');
+    res
+  )
 
-    models.Album
+  //get albums
+  .then(function getAlbums(queryCondition) {
+    return models.Album
     .find(queryCondition.range)
-    .find()
     .sort({_id:-1})
     .limit(queryCondition.count)
-    .populate(photoIdListPopulate)
-    .exec(function(err, albums){
-      if(err) throw err;
+    //.populate(photoIdListPopulate);
+    .populate({path: 'photoIdList', options: {limit : 10}});
+  })
 
-      res.send(albums);
-      logRes(req.log, res);
-    })
-  } catch (err) {
-    req.log.error({err:err}, "Unknown error");
-    errHandle.unknown(res, err);
-  }
+  //respond
+  .then(function respond(albums) {
+    res.send(albums);
+    logRes(req.log, res);
+  })
+
+  //error handling
+  .catch (function(err) {
+    if(!(err instanceof PromiseReject)) {
+      req.log.error({err:err}, "Unknown error");
+      errHandle.unknown(res, err);
+    }
+  });
 });
 
 /**
@@ -69,59 +82,64 @@ router.route('/hot')
 router.route('/editor')
 //get timeline of editors
 .get(function(req, res, next) {
-  try{
-    logReq(req.log, req);
+  logReq(req.log, req);
 
-    var queryCondition = helper.getTimelineStyleQuery({
-        count:req.query.count, 
-        maxId:req.query.maxId, 
-        sinceId:req.query.sinceId
+  //get query
+  helper.getTimelineStyleQuery({
+      count:req.query.count, 
+      maxId:req.query.maxId, 
+      sinceId:req.query.sinceId
     },
     req.log,
-    res);
-    req.log.info({queryCondition: queryCondition}, 'Fetching timeline using query specification');
+    res
+  )
 
-    models.Editor
+  //get editor
+  .then(function getEditors(queryCondition) {
+    return models.Editor
     .find(queryCondition.range)
     .sort({_id:-1})
     .limit(queryCondition.count)
-    .populate('albumIdList')
-    .exec(function(err, editors){
-      if(err) throw err;
+    .populate('albumIdList');
+  })
 
-      res.send(editors);
-      logRes(req.log, res);
-    });
-  } catch (err) {
-    req.log.error({err:err}, "Unknown error");
-    errHandle.unknown(res, err);
-  }
+  //respond
+  .then(function respond(editors) {
+    res.send(editors);
+    logRes(req.log, res);
+  })
+  
+  //error handling
+  .catch (function(err) {
+    if(!(err instanceof PromiseReject)) {
+      req.log.error({err:err}, "Unknown error");
+      errHandle.unknown(res, err);
+    }
+  });
 })
 .post(bodyParser.json(), function(req, res, next) {
-  try{
-    logReq(req.log, req);
+  logReq(req.log, req);
 
-    var name = req.body.name;
-    var albumIdList = req.body.albumIdList;
+  var data = {}
+  data.name = req.body.name;
+  data.albumIdList = req.body.albumIdList;
 
-    if(!name) {
-      var msg = "Need name for editor choice";
-      req.log.warn(msg);
-      errHandle.badRequest(res, msg);
+  //post editor
+  models.Editor.create(data)
+  .then(function(editor) {
+    res.statusCode = 201;
+    res.send(editor);
+    req.log.info({editor:editor}, "Post new editor");
+    logRes(req.log, res);
+  })
+  
+  //error handling
+  .catch (function(err) {
+    if(!(err instanceof PromiseReject)) {
+      req.log.error({err:err}, "Unknown error");
+      errHandle.unknown(res, err);
     }
-
-    models.Editor.create(data, function(err, editor) {
-      if(err) throw err;
-
-      res.statusCode = 201;
-      res.send(editor);
-      req.log.info({editor:editor}, "Post new editor");
-      logRes(req.log, res);
-    });
-  } catch (err) {
-    req.log.error({err:err}, "Unknown error");
-    errHandle.unknown(res, err);
-  }
+  });
 });
 
 /**
@@ -129,37 +147,61 @@ router.route('/editor')
  */
 router.route('/editor/:id')
 .get(function(req,res,next) {
-  try{
-    logReq(req.log, req);
+  logReq(req.log, req);
 
+  //find editor
+  function findEditor() {
     var id = req.params.id;
-
-    models.Editor
+    return models.Editor
     .findById(id)
-    .populate('albumIdList')
-    .exec(function(err, editor){
-      if(err) throw err;
-      if(!editor) {
-        var msg = "Editor not found by id " + id;
-        req.log.warn(msg);
-        return errHandle.notFound(res, msg);
-      }
-
-      models.Album.populate(
-        editor.albumIdList, 
-        {path: 'photoIdList',},
-        function(err, photo) {
-          if(err) throw err;
-
-          res.send(editor);
-          req.log.info({editor:editor}, "Get editor");
-          logRes(req.log, res);
-      });
-    });
-  } catch (err) {
-    req.log.error({err:err}, "Unknown error");
-    errHandle.unknown(res, err);
+    .populate('albumIdList');
   }
+
+  //assure editor exist
+  function assureEditorExist(editor) {
+    if(!editor) {
+      var msg = "Editor not found by id " + id;
+      req.log.warn(msg);
+      errHandle.notFound(res, msg);
+      throw new PromiseReject();
+    }
+
+    return editor;
+  }
+
+  //populate with photos
+  function populatePhotos(editor) {
+    return models.Album.populate(
+      editor.albumIdList, 
+      {path: 'photoIdList',});
+  }
+
+  //respond
+  function respond(editor) {
+    res.send(editor);
+    req.log.info({editor:editor}, "Get editor");
+    logRes(req.log, res);
+  }
+
+  /*
+   * findEditor -> assureEditorExist ----------------------|->respond
+   *                                  |                    |
+   *                                  |-> populatePhotos ->|
+   */
+  var getEditor = findEditor().then(assureEditorExist);
+  Promise.join(
+    getEditor,
+    getEditor.populatePhotos,
+
+    respond
+  )
+  //error handling
+  .catch (function(err) {
+    if(!(err instanceof PromiseReject)) {
+      req.log.error({err:err}, "Unknown error");
+      errHandle.unknown(res, err);
+    }
+  });
 });
 
 module.exports = router;

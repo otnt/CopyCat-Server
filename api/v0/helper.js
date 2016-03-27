@@ -7,44 +7,48 @@
 var prefetchPhotoNumber = 10;
 module.exports.photoIdListPopulate = {
   path: 'photoIdList',
-  options: {limit : prefetchPhotoNumber},
+  options: {limit : 10},//prefetchPhotoNumber},
 }
 
 /**
  * Timeline style query parameters
  */
 module.exports.getTimelineStyleQuery = function getTimelineStyleQuery(query, log, res) {
- var queryCondition = {};
+  return new Promise(function(resolve, reject) {
 
- //count
- var count = query.count;
- if(count && isNaN(parseInt(count))) {
-   var msg = "count should be numeric but is " + count;
-   errHandle.badRequest(res, msg);
-   log.warn(msg);
-   return;
- }
- queryCondition.count = count ? (count > 200 ? 200 : parseInt(count)) : 20;
+    var queryCondition = {};
 
- //maxId
- var maxId = query.maxId;
- if(maxId) {
-   if(!queryCondition.range._id) {
-     queryCondition.range._id = {};
-   }
-   queryCondition.range._id['$lt'] = maxId;
- }
+    //count
+    var count = query.count;
+    if(count && isNaN(parseInt(count))) {
+      var msg = "count should be numeric but is " + count;
+      errHandle.badRequest(res, msg);
+      log.warn(msg);
+      throw new PromiseReject();
+    }
+    queryCondition.count = count ? (count > 200 ? 200 : parseInt(count)) : 20;
 
- //sinceId
- var sinceId = query.sinceId;
- if(sinceId) {
-   if(!queryCondition.range._id) {
-     queryCondition.range._id = {};
-   }
-   queryCondition.range._id['$gt'] = sinceId;
- }
+    //maxId
+    var maxId = query.maxId;
+    if(maxId) {
+      if(!queryCondition.range._id) {
+        queryCondition.range._id = {};
+      }
+      queryCondition.range._id['$lt'] = maxId;
+    }
 
- return queryCondition;
+    //sinceId
+    var sinceId = query.sinceId;
+    if(sinceId) {
+      if(!queryCondition.range._id) {
+        queryCondition.range._id = {};
+      }
+      queryCondition.range._id['$gt'] = sinceId;
+    }
+
+    log.info({queryCondition: queryCondition}, 'Fetching using query specification');
+    resolve(queryCondition);
+  });
 }
 
 /**

@@ -235,7 +235,10 @@ router.route('/')
   )
   .then(respond)
   .catch(function(err) {
-    req.log.error({err:err});
+    if(!(err instanceof PromiseReject)) {
+      req.log.error({err:err}, "Unknown error");
+      errHandle.unknown(res, err);
+    }
   })
 
 });

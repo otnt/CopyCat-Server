@@ -35,33 +35,39 @@ router.use(logReqIdMiddleware);
  */
 router.route('/')
 .get(function(req, res, next) {
-  try{
-    logReq(req.log, req);
+  logReq(req.log, req);
 
-    var queryCondition = helper.getTimelineStyleQuery({
-        count:req.query.count, 
-        maxId:req.query.maxId, 
-        sinceId:req.query.sinceId
+  //get query
+  helper.getTimelineStyleQuery({
+      count:req.query.count, 
+      maxId:req.query.maxId, 
+      sinceId:req.query.sinceId
     },
     req.log,
-    res);
-    req.log.info({queryCondition: queryCondition}, 'Fetching timeline using query specification');
-
-    //fetch timeline and respond
-    models.Photo
+    res
+  )
+  
+  //fetch timeline
+  .then(function getTimeline(queryCondition) {
+    return models.Photo
     .find(queryCondition.range)
     .sort({_id:-1})
-    .limit(queryCondition.count)
-    .exec(function(err, photos){
-      if(err) throw err;
+    .limit(queryCondition.count);
+  })
 
-      res.send(photos);
-      logRes(req.log, res);
-    })
-  } catch (err) {
-    req.log.error({err:err}, "Unknown error");
-    errHandle.unknown(res, err);
-  }
+  //respond
+  .then(function respond(photos) {
+    res.send(photos);
+    logRes(req.log, res);
+  })
+
+  //error handling
+  .catch (function(err) {
+    if(!(err instanceof PromiseReject)) {
+      req.log.error({err:err}, "Unknown error");
+      errHandle.unknown(res, err);
+    }
+  });
 });
 
 module.exports = router;
