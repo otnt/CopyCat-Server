@@ -7,5 +7,7 @@ module.exports = mongoose.model('User',
   mongoose.Schema({
       name: {type: String, required: true},
       time : { type : Date, default: Date.now, required: true}
-  })
+    },
+    { read: 'primaryPreferred' }
+  )
 );

@@ -13,6 +13,8 @@ module.exports = mongoose.model('Album',
       ownerId: {type: ObjectId, ref: 'User', required: true},
       tagList: [String],
       time : { type : Date, default: Date.now, required: true}
-  })
+    }, 
+    { read: 'primaryPreferred' }
+  )
 );
 

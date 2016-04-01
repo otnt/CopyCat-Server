@@ -14,5 +14,7 @@ module.exports = mongoose.model('Photo',
       time : { type : Date, default: Date.now, required: true},
       height:{type:Number},
       width:{type:Number}
-  })
+    },
+    { read: 'primaryPreferred' }
+  )
 );

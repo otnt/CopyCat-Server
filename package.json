@@ -20,6 +20,8 @@
     "eslint" : "^2.2.0",
     "bunyan" : "^1.8.0",
     "node-uuid" : "^1.4.6",
-    "bluebird" : "^3.3.4"
+    "bluebird" : "^3.3.4",
+    "sprintf-js" : "^1.0.3",
+    "js-yaml": "^3.5.5"
   }
 }

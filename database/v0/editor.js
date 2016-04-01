@@ -10,5 +10,7 @@ module.exports = mongoose.model('Editor',
       name: {type:String, required:true},
       albumIdList: [{type: ObjectId, ref: 'Album'}],
       time : { type : Date, default: Date.now, required: true}
-  })
+    },
+    { read: 'primaryPreferred' }
+  )
 );
