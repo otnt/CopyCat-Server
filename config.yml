@@ -1,0 +1,9 @@
+---
+# This YAML file is used to store configuration parameter for CopyCat backend.
+# For a more detailed explanation of each parameter, please refer to CopyCat backend documentation.
+# Format is follow YAML standard.
+
+databaseAddr: !!seq
+- '172.31.59.129:27017'
+- '172.31.49.28:27017'
+- '172.31.18.73:27017'
