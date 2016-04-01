@@ -7,3 +7,8 @@ databaseAddr: !!seq
 - '172.31.59.129:27017'
 - '172.31.49.28:27017'
 - '172.31.18.73:27017'
+
+credential: !!map
+  accessKeyId: AKIAIMLE76URPMCTIAXA
+  secretAccessKey: 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
+  region: us-east-1

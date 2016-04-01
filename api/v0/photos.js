@@ -4,6 +4,7 @@ var express = require("express");
 var router = express.Router();
 var models = require("../../database/v0/models.js");
 var bodyParser = require('body-parser');
+var config = require('../../config.js');
 
 /**
  * Bluebird made promise easy
@@ -14,7 +15,7 @@ var Promise = require("bluebird");
  * AWS service
  */
 var AWS = require('aws-sdk');
-AWS.config.loadFromPath('./crenditial.json');
+AWS.config = new AWS.Config(config.credential);
 var s3 = new AWS.S3();
 
 /**
