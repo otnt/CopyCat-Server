@@ -155,7 +155,7 @@ router.route('/')
   //upload new photo to AWS S3
   function uploadPhoto(id, buffer) {
     var params = {
-      Bucket: 'copycatimage',
+      Bucket: config.s3ImageBucket.name,
       Key: id,
       ACL: 'public-read',
       Body: buffer,
