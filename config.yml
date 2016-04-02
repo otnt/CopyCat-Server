@@ -17,8 +17,9 @@ credential: !!map
 
 # server port
 httpPort: 80
+httpDevPort: 3000
 httpsPort: 443
 
 # s3 image bucket name
 s3ImageBucket: !!map
-  name: copycatimage0
+  name: copycatimage
