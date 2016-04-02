@@ -3,12 +3,18 @@
 # For a more detailed explanation of each parameter, please refer to CopyCat backend documentation.
 # Format is follow YAML standard.
 
-databaseAddr: !!seq
+# MongoDB replica set address
+replicaAddr: !!seq
 - '172.31.59.129:27017'
 - '172.31.49.28:27017'
 - '172.31.18.73:27017'
 
+# AWS credential
 credential: !!map
   accessKeyId: AKIAIMLE76URPMCTIAXA
   secretAccessKey: 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
   region: us-east-1
+
+# server port
+httpPort: 80
+httpsPort: 443
