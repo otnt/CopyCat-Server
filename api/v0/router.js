@@ -10,6 +10,7 @@ var labels = require("./labels.js");
 var timeline = require("./timeline.js");
 var heartbeat = require("./heartbeat.js");
 var feedback = require("./feedback.js");
+var instagram = require("./socialmedia/instagram.js");
 
 router.use(function(req, res, next) {
   console.log(Date.now() + " " + req.originalUrl);
@@ -23,5 +24,6 @@ router.use('/labels', labels);
 router.use('/timeline', timeline);
 router.use('/heartbeat', heartbeat);
 router.use('/feedback', feedback);
+router.use('/instagram', instagram);
 
 module.exports = router;

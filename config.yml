@@ -3,6 +3,9 @@
 # For a more detailed explanation of each parameter, please refer to CopyCat backend documentation.
 # Format is follow YAML standard.
 
+# Load Balancer
+loadBalancer : 'CopyCatLoadBalancer-426137485.us-east-1.elb.amazonaws.com'
+
 # MongoDB replica set address
 replicaAddr: !!seq
 - '172.31.59.129:27017'
@@ -23,3 +26,11 @@ httpsPort: 443
 # s3 image bucket name
 s3ImageBucket: !!map
   name: copycatimage
+
+# instagram
+instagram: !!map
+  clientId: 'ea2679a4073c4809919836b18e91b257'
+  clientSecret : '87e2890a23fd4defb7fc2cfc76f43d15'
+  grantType : 'authorization_code'
+  accessURL: 'http://CopyCatLoadBalancer-426137485.us-east-1.elb.amazonaws.com:80/api/v0/instagram/login'
+  
