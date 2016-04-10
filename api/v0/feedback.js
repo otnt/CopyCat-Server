@@ -1,6 +1,7 @@
 var nodemailer = require('nodemailer');
 var express = require("express");
 var router = express.Router();
+var bodyParser = require('body-parser');
 
 /**
  * helper functions and objects
@@ -23,32 +24,51 @@ router.use(logReqIdMiddleware);
 /**
  * Create reusable transporter object using the default SMTP transport
  */
-var transporter = nodemailer.createTransport('smtps://user%40gmail.com:pass@smtp.gmail.com');
+var smtpConfig = {
+    host: 'smtp.gmail.com',
+    port: 465,
+    secure: true, // use SSL
+    auth: {
+        user: 'copycatsvteam@gmail.com',
+        pass: 'copycatteam'
+    }
+};
+var transporter = nodemailer.createTransport(smtpConfig);
 
 /**
- * Get a photo speficied by a photoId
+ * Post a feedback
  */
+router.use(bodyParser.json({limit: '5mb'}));//feed no more than 5mb
 router.route('/')
-.get(function(req, res) {
+.post(function(req, res) {
     logReq(req.log, req);
 
-    req.log.trace(req.query);
+    if(!req.body.subject ||
+        !req.body.contact||
+        !req.body.text ) {
+            var msg = "Missing field, need contact, subject, text";
+            req.log.warn({req:req}, msg);
+            return errHandle.badRequest(res, msg);
+        }
 
     // setup e-mail data with unicode symbols
     var mailOptions = {
-        from: '"pufan jiang" <jiangpufan@gmail.com>', // sender address
-    to: 'jiangpufan@gmail.com', // list of receivers
-    subject: 'Feedback', // Subject line
-    text: '', // plaintext body
-    html: '<b></b>' // html body
+        from: req.body.contact, // sender address
+    to: 'copycatsvteam@gmail.com', // list of receivers
+    subject: req.body.subject, // Subject line
+    text: req.body.text, // plaintext body
+    html: req.body.text // html body
     };
 
     // send mail with defined transport object
-    transporter.sendMail(mailOptions, function(error, info){
-        if(error){
-            return console.log(error);
+    transporter.sendMail(mailOptions, function(err, info){
+        if(err){
+            var msg = "error when sending feedback email";
+            req.log.error({err:err}, msg);
+            return errHandle.unknown(res, msg);
         }
-        console.log('Message sent: ' + info.response);
+        req.log.info({info:info.response});
+        return res.send(info.response);
     });
 });
 
