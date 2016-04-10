@@ -140,15 +140,15 @@ var log = bunyan.createLogger({
       },
       {
         level: 'debug',
-        path: './log/copycat-debug.log' // log DEBUG and above to a file
+        path: './log/copycat-debug.logfile' // log DEBUG and above to a file
       },
       {
         level: 'info',
-        path: './log/copycat-info.log' // log INFO and above to a file
+        path: './log/copycat-info.logfile' // log INFO and above to a file
       },
       {
         level: 'error',
-        path: './log/copycat-error.log' // log ERROR and above to a file
+        path: './log/copycat-error.logfile' // log ERROR and above to a file
       },
     ],
     serializers: {
