@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
-#https://docs.docker.com/machine/drivers/aws/
+#
+# This file is used to create a remote ec2 docker machine
+#
+# Reference: https://docs.docker.com/machine/drivers/aws/
+# Maintainer: Pufan Jiang <jiangpufan@gmail.com>
+
 usage() {
-    echo "Usage: /bin/bash docker_machine_ec2.sh [Instance Name]"
+    echo "Usage: /bin/bash $0 [Instance Name]"
 }
 
 if [ "$#" -eq 1 ]; then
@@ -12,11 +17,11 @@ if [ "$#" -eq 1 ]; then
         --amazonec2-subnet-id subnet-403f146b \
         --amazonec2-security-group Open \
         --amazonec2-tags Name,$1 \
-        --amazonec2-instance-type m4.large \
+        --amazonec2-instance-type t2.micro \
         --amazonec2-root-size 8 \
         --amazonec2-iam-instance-profile CopyCatServer \
         --amazonec2-monitoring \
-        $1
+        $1 # docker machine name
 else
     usage
 fi
