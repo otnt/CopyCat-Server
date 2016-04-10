@@ -3,5 +3,4 @@ node_modules/
 *.swp
 *.swo
 testImage/
-*.log
-test*
+*.logfile
