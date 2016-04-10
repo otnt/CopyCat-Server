@@ -1,3 +1,5 @@
+'use strict'
+
 const express = require('express');
 const server = express();
 const routerV0 = require('./api/v0/router.js');

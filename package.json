@@ -4,26 +4,30 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start" : "node server.js | ./node_modules/bunyan/bin/bunyan"
+    "start": "node server.js | ./node_modules/bunyan/bin/bunyan"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "async": "^1.5.2",
     "express": "^4.13.4",
-    "mongoose" : "^4.4.4",
+    "mongoose": "^4.4.4",
     "python-shell": "^0.3.0",
     "body-parser": "^1.15.0",
-    "aws-sdk" : "^2.2.41",
-    "request" : "^2.67.0",
-    "gm" : "^1.21.1",
-    "eslint" : "^2.2.0",
-    "bunyan" : "^1.8.0",
-    "node-uuid" : "^1.4.6",
-    "bluebird" : "^3.3.4",
-    "sprintf-js" : "^1.0.3",
+    "aws-sdk": "^2.2.41",
+    "request": "^2.67.0",
+    "gm": "^1.21.1",
+    "eslint": "^2.2.0",
+    "bunyan": "^1.8.0",
+    "node-uuid": "^1.4.6",
+    "bluebird": "^3.3.4",
+    "sprintf-js": "^1.0.3",
     "js-yaml": "^3.5.5",
-    "nodemailer": "^2.3.1",
-    "request" : "^2.67.0"
+    "nodemailer": "^2.3.1"
+  },
+  "devDependencies": {
+    "eslint": "^2.7.0",
+    "eslint-config-airbnb": "^6.2.0",
+    "eslint-plugin-react": "^4.3.0"
   }
 }
