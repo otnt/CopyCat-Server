@@ -1,22 +1,19 @@
-'use strict';
-var express = require("express");
-var router = express.Router();
-var config = require('../../../config.js');
-const sprintf = require("sprintf-js").sprintf
-var request = require('request');
+const express = require('express');
+const router = new express.Router();
+const config = require('../../../config.js');
+const request = require('request');
 
 /**
  * helper functions and objects
  */
-var helper = require("../helper.js");
-var errHandle = helper.errHandle;
+const helper = require('../helper.js');
+const errHandle = helper.errHandle;
 
 /**
  * log objects and functions
  */
-var logReq = helper.logReq;
-var logRes = helper.logRes;
-var logReqIdMiddleware = helper.logReqIdMiddleware;
+const logReq = helper.logReq;
+const logReqIdMiddleware = helper.logReqIdMiddleware;
 
 /**
  * Add reqId to each request
@@ -36,16 +33,16 @@ router.route('/login')
         return errHandle.badRequest(res, msg);
     }
 
-    request.post( 
+    request.post(
         'https://api.instagram.com/oauth/access_token',
-        { form: 
-            { 
+        { form:
+            {
                 client_id: config.instagram.clientId,
         client_secret : config.instagram.clientSecret,
         grant_type : config.instagram.grantType,
-        redirect_uri : config.instagram.accessURL,
+        redirect_uri : config.instagram.redirectURL,
         code : req.query.code
-            } 
+            }
         },
         function (err, response, body) {
             if(err) {
@@ -54,7 +51,7 @@ router.route('/login')
                 return errHandle.unknown(res, msg);
             }
             req.log.info({body:body}, "Get response from instagram server");
-            res.json(body);
+            res.end();
         }
         );
 });
