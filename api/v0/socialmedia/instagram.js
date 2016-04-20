@@ -51,7 +51,7 @@ router.route('/login')
                 return errHandle.unknown(res, msg);
             }
             req.log.info({body:body}, "Get response from instagram server");
-            res.end();
+            res.send(body);
         }
         );
 });
