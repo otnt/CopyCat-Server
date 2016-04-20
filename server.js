@@ -5,6 +5,7 @@ const config = require('./config.js');
 const sprintf = require('sprintf-js').sprintf;
 
 server.use('/api/v0', routerV0);
+server.use('/privacy-policy', express.static('privacy-policy'));
 
 server.listen(config.httpPort, () => {
     console.log(sprintf('copy cat listening on port %d !', config.httpPort));
