@@ -1,13 +1,19 @@
 const express = require('express');
 const router = new express.Router();
 const config = require('../../../config.js');
-const request = require('request');
+
+/**
+ * Promise lib
+ */
+const Promise = require("bluebird");
+const request = Promise.promisifyAll(require("request"));
 
 /**
  * helper functions and objects
  */
 const helper = require('../helper.js');
 const errHandle = helper.errHandle;
+const login = require('../auth/login.js');
 
 /**
  * log objects and functions
@@ -33,27 +39,38 @@ router.route('/login')
         return errHandle.badRequest(res, msg);
     }
 
-    request.post(
+    // Get ins user from instagram server
+    request.postAsync(
         'https://api.instagram.com/oauth/access_token',
         { form:
             {
-                client_id: config.instagram.clientId,
-        client_secret : config.instagram.clientSecret,
-        grant_type : config.instagram.grantType,
-        redirect_uri : config.instagram.redirectURL,
-        code : req.query.code
+              client_id: config.instagram.clientId,
+              client_secret : config.instagram.clientSecret,
+              grant_type : config.instagram.grantType,
+              redirect_uri : config.instagram.redirectURL,
+              code : req.query.code
             }
-        },
-        function (err, response, body) {
-            if(err) {
-                var msg = "Unknown error during authorizing instagram";
-                req.log.error({err:err}, msg);
-                return errHandle.unknown(res, msg);
-            }
-            req.log.info({body:body}, "Get response from instagram server");
-            res.send(body);
         }
-        );
+    )
+    .then((resBody) => {
+        response = resBody.response;
+        body = resBody.body;
+        req.log.info({ response, body }, "Get response from instagram server");
+
+        return JSON.parse(body);
+    })
+    // Get copycat user
+    .then(Promise.promisify(login.instagram))
+    // Return
+    .then((user) => {
+        req.log.info({ user: user }, "Get instagram user");
+        res.send(user);
+    })
+    // Error handling
+    .catch((err) => {
+        req.log.error({ err });
+        return errHandle.unknown(res, err);
+    });
 });
 
 module.exports = router;
