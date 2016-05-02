@@ -1,24 +1,22 @@
-'use strict'
-
-var express = require("express");
-var router = express.Router();
-var models = require("../../database/v0/models.js");
-var bodyParser = require('body-parser')
+const express = require('express');
+const router = new express.Router();
+const models = require('../../database/v0/models.js');
+const bodyParser = require('body-parser');
 
 /**
  * Helper functions
  */
-var helper = require("./helper.js");
-var photoIdListPopulate = helper.photoIdListPopulate;
-var errHandle = helper.errHandle;
-var PromiseReject = helper.PromiseReject;
+const helper = require('./helper.js');
+// const photoIdListPopulate = helper.photoIdListPopulate;
+const errHandle = helper.errHandle;
+const PromiseReject = helper.PromiseReject;
 
 /**
  * log objects and functions
  */
-var logReq = helper.logReq;
-var logRes = helper.logRes;
-var logReqIdMiddleware = helper.logReqIdMiddleware;
+const logReq = helper.logReq;
+const logRes = helper.logRes;
+const logReqIdMiddleware = helper.logReqIdMiddleware;
 
 /**
  * Add reqId to each request
@@ -29,42 +27,42 @@ router.use(logReqIdMiddleware);
  * Get a specific album.
  */
 router.route('/:id')
-.get(function(req, res, next) {
-    logReq(req.log, req);
+.get((req, res) => {
+  logReq(req.log, req);
 
-    //find album using id
-    var id = req.params.id;
-    models.Album.findById(id)
-    .populate({
-        path: 'photoIdList',
-        populate: {
-            path: 'ownerId',
-            model: 'User',
-        },
-    })
-    .populate('ownerId')
-    //assure album exist, and populate user in photos
-    .then(function assureAlbumExist(album) {
-      if(!album) {
-        var msg = 'Album not found using id ' + id;
-        req.log.warn(msg);
-        errHandle.notFound(res, msg);
-        throw new PromiseReject();
-      }
-      return album;
-    })
-    //respond
-    .then(function respond(album) {
-      res.send(album);
-      req.log.info({album:album}, "Get album.");
-      logRes(req.log, res);
-    })
-    .catch (function(err) {
-      if(!(err instanceof PromiseReject)) {
-        req.log.error({err:err}, "Unknown error");
-        errHandle.unknown(res, err);
-      }
-    });
+  // find album using id
+  const id = req.params.id;
+  models.Album.findById(id)
+  .populate({
+      path: 'photoIdList',
+      populate: {
+          path: 'ownerId',
+          model: 'User',
+      },
+  })
+  .populate('ownerId')
+  // assure album exist, and populate user in photos
+  .then((album) => {
+    if (!album) {
+      const msg = 'Album not found using id ' + id;
+      req.log.warn(msg);
+      errHandle.notFound(res, msg);
+      throw new PromiseReject();
+    }
+    return album;
+  })
+  // respond
+  .then((album) => {
+    res.send(album);
+    req.log.info({ album }, 'Get album.');
+    logRes(req.log, res);
+  })
+  .catch((err) => {
+    if (!(err instanceof PromiseReject)) {
+      req.log.error({ err }, 'Unknown error');
+      errHandle.unknown(res, err);
+    }
+  });
 });
 
 /**
@@ -117,7 +115,7 @@ router.route('/')
     if(!album) {
       var msg = "Create album failed";
       req.log.warn(msg);
-      errHandle.notFound(res, msg);
+      errHandle.badRequest(res, msg);
       throw new PromiseReject();
     }
 
@@ -125,7 +123,7 @@ router.route('/')
   })
 
   //respond
-  .then(function respond(album) {
+  .then((album) => {
     res.statusCode = 201;
     res.send(album);
     req.log.info({album:album}, "Album created");

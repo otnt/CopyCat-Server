@@ -1,5 +1,3 @@
-'use strict';
-
 /**
  * Populate photo id list to album with restriction.
  */
@@ -73,7 +71,8 @@ module.exports.assertHeader = function(req, res, log, name, wanted) {
   }
   log.info("Assert header %s, wanted: %s, actual: %s, passed", name, wanted, actual);
   return true;
-}
+};
+
 
 /**
  * Error handling.
@@ -199,9 +198,13 @@ function PromiseReject(message) {
 PromiseReject.prototype = new Error; 
 module.exports.PromiseReject = PromiseReject;
 
+/**
+ * Assert some field exist, otherwise return error badRequest
+ */
 
-
-
-
-
+module.exports.assertExist = function assertExist(obj, objName, res) {
+  if (obj === null) {
+    errHandle.badRequest(res, 'Missing ' + objName);
+  }
+};
 

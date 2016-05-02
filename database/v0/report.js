@@ -2,13 +2,12 @@ const mongoose = require('mongoose');
 mongoose.Promise = require('bluebird');
 const ObjectId = mongoose.Schema.ObjectId;
 
-module.exports = mongoose.model('Album',
+module.exports = mongoose.model('Report',
   new mongoose.Schema({
-    name: { type: String, required: true },
-    imageUrl: { type: String, required: true },
-    photoIdList: [{ type: ObjectId, ref: 'Photo' }],
+    name: {
+      name: { type: String },
+    },
     ownerId: { type: ObjectId, ref: 'User', required: true },
-    tagList: [String],
     time: { type: Date, default: Date.now, required: true },
   },
   { read: 'primaryPreferred' }

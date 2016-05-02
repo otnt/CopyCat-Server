@@ -1,21 +1,15 @@
-'use strict';
+const express = require('express');
+const router = new express.Router();
 
-var express = require("express");
-var router = express.Router();
-
-var promos = require("./promos.js");
-var albums = require("./albums.js");
-var photos = require("./photos.js");
-var labels = require("./labels.js");
-var timeline = require("./timeline.js");
-var heartbeat = require("./heartbeat.js");
-var feedback = require("./feedback.js");
-var instagram = require("./socialmedia/instagram.js");
-
-router.use(function(req, res, next) {
-  console.log(Date.now() + " " + req.originalUrl);
-  next();
-});
+const promos = require('./promos.js');
+const albums = require('./albums.js');
+const photos = require('./photos.js');
+const labels = require('./labels.js');
+const timeline = require('./timeline.js');
+const heartbeat = require('./heartbeat.js');
+const feedback = require('./feedback.js');
+const instagram = require('./socialmedia/instagram.js');
+const reports = require('./reports.js');
 
 router.use('/promos', promos);
 router.use('/albums', albums);
@@ -25,5 +19,6 @@ router.use('/timeline', timeline);
 router.use('/heartbeat', heartbeat);
 router.use('/feedback', feedback);
 router.use('/instagram', instagram);
+router.use('/reports', reports);
 
 module.exports = router;
