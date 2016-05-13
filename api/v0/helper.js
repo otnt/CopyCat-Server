@@ -16,6 +16,7 @@ module.exports.photoIdListPopulate = {
 module.exports.getTimelineStyleQuery = function getTimelineStyleQuery(query, log, res) {
   return new Promise(function(resolve, reject) {
 
+    try {
     var queryCondition = {};
 
     //count
@@ -31,7 +32,8 @@ module.exports.getTimelineStyleQuery = function getTimelineStyleQuery(query, log
     //maxId
     var maxId = query.maxId;
     if(maxId) {
-      if(!queryCondition.range._id) {
+      if(!queryCondition.range || !queryCondition.range._id) {
+        queryCondition.range = {};
         queryCondition.range._id = {};
       }
       queryCondition.range._id['$lt'] = maxId;
@@ -40,7 +42,8 @@ module.exports.getTimelineStyleQuery = function getTimelineStyleQuery(query, log
     //sinceId
     var sinceId = query.sinceId;
     if(sinceId) {
-      if(!queryCondition.range._id) {
+      if(!queryCondition.range || !queryCondition.range._id) {
+        queryCondition.range = {};
         queryCondition.range._id = {};
       }
       queryCondition.range._id['$gt'] = sinceId;
@@ -48,6 +51,10 @@ module.exports.getTimelineStyleQuery = function getTimelineStyleQuery(query, log
 
     log.info({queryCondition: queryCondition}, 'Fetching using query specification');
     resolve(queryCondition);
+    } catch (err) {
+        log.error({err}, 'Unknown error');
+        throw new PromiseReject();
+    }
   });
 }
 
