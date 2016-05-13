@@ -100,14 +100,12 @@ router.route('/')
      assertHeader(req, res, req.log, 'content-type', 'application/json');
 
      //create a new empty photo(i.e. without imageUrl) in database to get photoId
-     //function createNewPhoto(id) {
      function createNewPhoto(buffer) {
          //create new photo
          var photo = {}
          photo.referenceId = req.body.referenceId;
          photo.ownerId = req.body.ownerId;
          photo.tagList = req.body.tagList;
-         //photo.ownerId = id;
 
          return models.Photo.create(photo)
              .then(function(photo) {

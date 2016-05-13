@@ -79,7 +79,7 @@ router.route('/')
     data.imageUrl = req.body.imageUrl;
     data.photoIdList = req.body.photoIdList;
     data.tagList = req.body.tagList;
-    data.ownerId = user._id;
+    data.ownerId = req.body.ownerId;
 
     return models.Album.create(data);
   })
