@@ -99,170 +99,153 @@ router.route('/')
 
      assertHeader(req, res, req.log, 'content-type', 'application/json');
 
-        //get user id uploading photo
-        function getUserId() {
-            return models.User.findOne()
-                .then(function(user) {
-                    if (!user) {
-                        var msg = "User not found.";
-                        req.log.warn(msg);
-                        errHandle.notFound(res, msg);
-                        throw new PromiseReject();
-                    }
+     //create a new empty photo(i.e. without imageUrl) in database to get photoId
+     //function createNewPhoto(id) {
+     function createNewPhoto(buffer) {
+         //create new photo
+         var photo = {}
+         photo.referenceId = req.body.referenceId;
+         photo.ownerId = req.body.ownerId;
+         photo.tagList = req.body.tagList;
+         //photo.ownerId = id;
 
-                    req.log.info({
-                        user: user
-                    }, "Found photo user.")
-                    return user._id;
-                });
-        }
+         return models.Photo.create(photo)
+             .then(function(photo) {
+                 if (!photo) {
+                     var msg = "Create photo failed";
+                     req.log.warn(msg);
+                     errHandle.unknown(res, msg);
+                     throw new PromiseReject();
+                 }
 
-        //create a new empty photo(i.e. without imageUrl) in database to get photoId
-        function createNewPhoto(id) {
-            //create new photo
-            var photo = {}
-            photo.referenceId = req.body.referenceId;
-            //photo.ownerId = req.body.ownerId;
-            photo.tagList = req.body.tagList;
-            photo.ownerId = id;
+                 req.log.info({
+                     photo: photo
+                 }, "Created new empty photo.");
+                 return { 'id': '' + photo._id, 'buffer': buffer };
+             });
+     }
 
-            return models.Photo.create(photo)
-                .then(function(photo) {
-                    if (!photo) {
-                        var msg = "Create photo failed";
-                        req.log.warn(msg);
-                        errHandle.unknown(res, msg);
-                        throw new PromiseReject();
-                    }
+     //compress photo data
+     function compressPhoto() {
+         var data = req.body.data;
+         if (!data) {
+             var msg = "Missing data part in request.";
+             req.log.error(msg);
+             errHandle.badRequest(res, msg);
+             throw new PromiseReject();
+         }
+         data = new Buffer(data, 'base64');
 
-                    req.log.info({
-                        photo: photo
-                    }, "Created new empty photo.");
-                    return '' + photo._id;
-                });
-        }
+         return new Promise(function(resolve, reject) {
+             gm(data, 'test.jpg')
+                 .setFormat('jpg')
+                 .resize(800, 600)
+                 .quality(80)
+                 .toBuffer(function(err, buffer) {
+                     if (err) throw err;
 
-        //compress photo data
-        function compressPhoto() {
-            var data = req.body.data;
-            if (!data) {
-                var msg = "Missing data part in request.";
-                req.log.warn(msg);
-                errHandle.badRequest(res, msg);
-                throw new PromiseReject();
-            }
-            data = new Buffer(data, 'base64');
+                     req.log.info("Compressed new photo.");
+                     resolve(buffer);
+                 })
+         })
+     }
 
-            return new Promise(function(resolve, reject) {
-                gm(data, 'img').resize(800, 600).quality(80)
-                    .toBuffer('JPG', function(err, buffer) {
-                        if (err) throw err;
+     //upload new photo to AWS S3
+     function uploadPhoto(idBuffer) {
+         const id = idBuffer.id;
+         const buffer = idBuffer.buffer;
 
-                        req.log.info("Compressed new photo.");
-                        resolve(buffer);
-                    })
-            })
-        }
+         var params = {
+             Bucket: config.s3ImageBucket.name,
+             Key: id,
+             ACL: 'public-read',
+             Body: buffer,
+             ContentLength: buffer.length,
+             ContentType: 'image/jpeg'
+         };
 
-        //upload new photo to AWS S3
-        function uploadPhoto(id, buffer) {
-            var params = {
-                Bucket: config.s3ImageBucket.name,
-                Key: id,
-                ACL: 'public-read',
-                Body: buffer,
-                ContentLength: buffer.length,
-                ContentType: 'image/jpeg'
-            };
+         return new Promise(function(resolve, reject) {
+             s3.upload(params)
+                 .send(function(err, data) {
+                     if (err) throw err;
 
-            return new Promise(function(resolve, reject) {
-                s3.upload(params)
-                    .send(function(err, data) {
-                        if (err) throw err;
+                     req.log.info("Uploaded new photo to S3");
+                     resolve([id, data.Location]);
+                 });
+         });
+     }
 
-                        req.log.info("Uploaded new photo to S3");
-                        resolve([id, data.Location]);
-                    });
-            });
-        }
+     //get photo size info
+     function getSize(data) {
+         return new Promise(function(resolve, reject) {
+             gm(data, 'img')
+                 .size(function(err, size) {
+                     if (err) throw err;
 
-        //get photo size info
-        function getSize(data) {
-            return new Promise(function(resolve, reject) {
-                gm(data, 'img')
-                    .size(function(err, size) {
-                        if (err) throw err;
+                     req.log.info("Got size of new photo.");
+                     resolve(size);
+                 })
+         });
+     }
 
-                        req.log.info("Got size of new photo.");
-                        resolve(size);
-                    })
-            });
-        }
+     //update photo in database
+     function updatePhoto(idUrl, size) {
+         var id = idUrl[0];
+         var url = idUrl[1];
+         return new Promise(function(resolve, reject) {
+             models.Photo.findByIdAndUpdate(
+                 id, {
+                     $set: {
+                         imageUrl: url,
+                         width: size.width,
+                         height: size.height
+                     }
+                 }, {
+                     new: true
+                 }, //set true to return modified data
+                 function(err, photo) {
+                     if (err) throw err;
 
-        //update photo in database
-        function updatePhoto(idUrl, size) {
-            var id = idUrl[0];
-            var url = idUrl[1];
-            return new Promise(function(resolve, reject) {
-                models.Photo.findByIdAndUpdate(
-                    id, {
-                        $set: {
-                            imageUrl: url,
-                            width: size.width,
-                            height: size.height
-                        }
-                    }, {
-                        new: true
-                    }, //set true to return modified data
-                    function(err, photo) {
-                        if (err) throw err;
+                     req.log.info({
+                         photo: photo
+                     }, "Updated new photo.");
+                     resolve(photo);
+                 }
+             );
+         })
+     }
 
-                        req.log.info({
-                            photo: photo
-                        }, "Updated new photo.");
-                        resolve(photo);
-                    }
-                );
-            })
-        }
+     //respond
+     function respond(photo) {
+         res.statusCode = 201;
+         res.send(photo);
+         logRes(req.log, res);
+     }
 
-        //respond
-        function respond(photo) {
-            res.statusCode = 201;
-            res.send(photo);
-            logRes(req.log, res);
-        }
+     /*
+      * get user id -> new empty photo id ->
+      *                                    | -> upload to S3   --|
+      * compress photo data --------------->                     |
+      *                     -                                    | --> update photo in database -> respond
+      *                       -                                  |
+      *                         -                                |
+      *                           ------------> get photo size --|
+      */
+     Promise.join(
+             compressPhoto().then(createNewPhoto).then(uploadPhoto),
+             compressPhoto().then(getSize),
 
-        /*
-         * get user id -> new empty photo id ->
-         *                                    | -> upload to S3   --|
-         * compress photo data --------------->                     |
-         *                     -                                    | --> update photo in database -> respond
-         *                       -                                  |
-         *                         -                                |
-         *                           ------------> get photo size --|
-         */
-        var promiseNewPhotoId = getUserId().then(createNewPhoto);
-        var promiseCompressPhoto = compressPhoto();
-        Promise.join(
-                Promise.join(
-                    promiseNewPhotoId,
-                    promiseCompressPhoto,
-                    uploadPhoto),
-
-                promiseCompressPhoto.then(getSize),
-
-                updatePhoto
-            )
-            .then(respond)
-            .catch(function(err) {
-                if (!(err instanceof PromiseReject)) {
-                    req.log.error({
-                        err: err
-                    }, "Unknown error");
-                    errHandle.unknown(res, err);
-                }
-            })
+             updatePhoto
+         )
+         .then(respond)
+         .catch(function(err) {
+             if (!(err instanceof PromiseReject)) {
+                 req.log.error({
+                     err: err
+                 }, "Unknown error");
+                 errHandle.unknown(res, err);
+             }
+         })
 
     });
 
