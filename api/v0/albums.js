@@ -35,9 +35,14 @@ router.route('/:id')
     //find album using id
     var id = req.params.id;
     models.Album.findById(id)
-      //.populate(photoIdListPopulate)
-    .populate({path: 'photoIdList', options: {limit : 10}})
-    //assure album exist
+    .populate({
+        path: 'photoIdList',
+        populate: {
+            path: 'ownerId',
+            model: 'User',
+        },
+    })
+    //assure album exist, and populate user in photos
     .then(function assureAlbumExist(album) {
       if(!album) {
         var msg = 'Album not found using id ' + id;

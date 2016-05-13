@@ -52,7 +52,8 @@ router.route('/')
     return models.Photo
     .find(queryCondition.range)
     .sort({_id:-1})
-    .limit(queryCondition.count);
+    .limit(queryCondition.count)
+    .populate('ownerId');
   })
 
   //respond

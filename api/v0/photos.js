@@ -57,6 +57,7 @@ router.route('/:id')
 
         //find photo by id
         models.Photo.findById(id)
+            .populate({path: 'ownerId'})
             //assure photo exists
             .then(function(photo) {
                 if (!photo) {

@@ -55,10 +55,15 @@ router.route('/hot')
     .find(queryCondition.range)
     .sort({_id:-1})
     .limit(queryCondition.count)
-    //.populate(photoIdListPopulate);
-    .populate({path: 'photoIdList', options: {limit : 10}});
+    .populate({
+        path: 'photoIdList',
+        populate: {
+            path: 'ownerId',
+            model: 'User',
+        },
+    })
   })
-
+  
   //respond
   .then(function respond(albums) {
     res.send(albums);
@@ -89,7 +94,13 @@ router.route('/editor')
   //feature will work, so this is okay.
   models.Editor
   .findOne()
-  .populate('albumIdList')
+  .populate({
+      path: 'albumIdList',
+      populate: {
+          path: 'ownerId',
+          model: 'User',
+      },
+  })
 
   /*
    * This is potentially better way to do this
