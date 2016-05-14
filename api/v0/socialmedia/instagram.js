@@ -14,6 +14,7 @@ const request = Promise.promisifyAll(require("request"));
 const helper = require('../helper.js');
 const errHandle = helper.errHandle;
 const login = require('../auth/login.js');
+const PromiseReject = helper.PromiseReject;
 
 /**
  * log objects and functions
@@ -54,22 +55,31 @@ router.route('/login')
     )
     .then((resBody) => {
         response = resBody.response;
-        body = resBody.body;
+        body = JSON.parse(resBody.body);
         req.log.info({ response, body }, "Get response from instagram server");
 
-        return JSON.parse(body);
+        if (!body.access_token) {
+            res.send(body);
+            throw new PromiseReject();
+        }
+
+        return body;
     })
     // Get copycat user
     .then(Promise.promisify(login.instagram))
     // Return
     .then((user) => {
-        req.log.info({ user: user }, "Get instagram user");
+        req.log.info({ user }, "Get instagram user");
         res.send(user);
     })
     // Error handling
     .catch((err) => {
-        req.log.error({ err });
-        return errHandle.unknown(res, err);
+      if (!(err instanceof PromiseReject)) {
+          req.log.error({
+              err: err
+          }, "Unknown error");
+          errHandle.unknown(res, err);
+      }
     });
 });
 
