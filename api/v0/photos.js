@@ -100,29 +100,33 @@ router.route('/')
 
      assertHeader(req, res, req.log, 'content-type', 'application/json');
 
-     //create a new empty photo(i.e. without imageUrl) in database to get photoId
-     function createNewPhoto(buffer) {
-         //create new photo
-         var photo = {}
-         photo.referenceId = req.body.referenceId;
-         photo.ownerId = req.body.ownerId;
-         photo.tagList = req.body.tagList;
 
-         return models.Photo.create(photo)
-             .then(function(photo) {
-                 if (!photo) {
-                     var msg = "Create photo failed";
-                     req.log.warn(msg);
-                     errHandle.unknown(res, msg);
-                     throw new PromiseReject();
-                 }
+     var userPromise = null;
+     var ownerId = req.body.ownerId;
+     if(ownerId) {
+         // assert user exists
+         userPromise = 
+           models.User.findById(ownerId).then((user) => {
+               if(!user) {
+                  var msg = "User does not exist";
+                  req.log.error(msg);
+                  errHandle.badRequest(res, msg);
+                  throw new PromiseReject();
+               }
 
-                 req.log.info({
-                     photo: photo
-                 }, "Created new empty photo.");
-                 return { 'id': '' + photo._id, 'buffer': buffer };
-             });
+               return null;
+           });
      }
+     else {
+         userPromise = 
+           models.User.find({ 'name' : 'anonymous' }).then((user) => {
+               console.log("come here");
+               console.log(user[0]);
+               ownerId = user[0]._id;
+               return null;
+           });
+     }
+
 
      //compress photo data
      function compressPhoto() {
@@ -147,6 +151,30 @@ router.route('/')
                      resolve(buffer);
                  })
          })
+     }
+
+     //create a new empty photo(i.e. without imageUrl) in database to get photoId
+     function createNewPhoto(buffer) {
+         //create new photo
+         var photo = {}
+         photo.referenceId = req.body.referenceId;
+         photo.ownerId = ownerId;
+         photo.tagList = req.body.tagList;
+
+         return models.Photo.create(photo)
+             .then(function(photo) {
+                 if (!photo) {
+                     var msg = "Create photo failed";
+                     req.log.warn(msg);
+                     errHandle.unknown(res, msg);
+                     throw new PromiseReject();
+                 }
+
+                 req.log.info({
+                     photo: photo
+                 }, "Created new empty photo.");
+                 return { 'id': '' + photo._id, 'buffer': buffer };
+             });
      }
 
      //upload new photo to AWS S3
@@ -214,6 +242,10 @@ router.route('/')
          })
      }
 
+     function populatePhoto(photo) {
+         return models.Photo.populate(photo, {path: 'ownerId', model: 'User'});
+     }
+
      //respond
      function respond(photo) {
          res.statusCode = 201;
@@ -232,10 +264,11 @@ router.route('/')
       */
      Promise.join(
              compressPhoto().then(createNewPhoto).then(uploadPhoto),
-             compressPhoto().then(getSize),
+             userPromise.then(compressPhoto).then(getSize),
 
              updatePhoto
          )
+         .then(populatePhoto)
          .then(respond)
          .catch(function(err) {
              if (!(err instanceof PromiseReject)) {

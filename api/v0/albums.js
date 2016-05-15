@@ -74,17 +74,39 @@ router.route('/')
 .post(function(req, res, next) {
   logReq(req.log, req);
 
-  //find user
-  models.User.findOne()
+  var userPromise = null;
+  var ownerId = req.body.ownerId;
+  if(ownerId) {
+      // assert user exists
+      userPromise = 
+        models.User.findById(ownerId).then((user) => {
+            if(!user) {
+               var msg = "User does not exist";
+               req.log.error(msg);
+               errHandle.badRequest(res, msg);
+               throw new PromiseReject();
+            }
+
+            return user._id;
+        });
+  }
+  else {
+      userPromise = 
+        models.User.find({ 'name' : 'anonymous' }).then((user) => {
+            return user[0]._id;
+        });
+  }
+
+  userPromise
 
   //album infomation
-  .then(function postAlbum(user) {
+  .then((ownerId) => {
     var data = {};
     data.name = req.body.name;
     data.imageUrl = req.body.imageUrl;
     data.photoIdList = req.body.photoIdList;
     data.tagList = req.body.tagList;
-    data.ownerId = req.body.ownerId;
+    data.ownerId = ownerId
 
     return models.Album.create(data);
   })
@@ -98,7 +120,7 @@ router.route('/')
       throw new PromiseReject();
     }
 
-    return album;
+    return models.Album.populate(album, {path: 'ownerId', model: 'User'});
   })
 
   //respond
