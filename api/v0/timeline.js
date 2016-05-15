@@ -4,6 +4,8 @@ var express = require("express");
 var router = express.Router();
 var models = require("../../database/v0/models.js");
 var bodyParser = require('body-parser');
+var ObjectId = require('mongodb').ObjectId;
+var config = require('../../config.js');
 
 /**
  * Helper functions.
@@ -46,9 +48,19 @@ router.route('/')
     req.log,
     res
   )
+
   
   //fetch timeline
   .then(function getTimeline(queryCondition) {
+
+    if(!req.query.secret || !req.query.secret === config.secret) {
+        if(!queryCondition.range) {
+            queryCondition.range = {};
+        }
+        queryCondition.range.ownerId = { $ne: ObjectId(config.copycattestId) };
+    }
+    req.log.info(queryCondition);
+
     return models.Photo
     .find(queryCondition.range)
     .sort({_id:-1})
