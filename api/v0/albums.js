@@ -42,6 +42,7 @@ router.route('/:id')
             model: 'User',
         },
     })
+    .populate('ownerId')
     //assure album exist, and populate user in photos
     .then(function assureAlbumExist(album) {
       if(!album) {

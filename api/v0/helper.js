@@ -80,15 +80,22 @@ module.exports.assertHeader = function(req, res, log, name, wanted) {
  * Given error type, respond object.
  */
 
+function newErrorReturn(code, errMsg) {
+    return {
+        code, 
+        errMsg,
+    };
+}
+
 var errHandle = function() {}
 errHandle.notFound = function(res, err) {
-  res.status(404).send({'errCode':404, 'errMsg' : "Not found: " + err});
+  res.status(404).send(newErrorReturn(404, "Not found: " + err));
 };
 errHandle.unknown = function(res, err) {
-  res.send({'errMsg':"Unknown error: " + err});
+  res.status(500).send(newErrorReturn(500, "Unknown error: " + err));
 };
 errHandle.badRequest = function(res, err) {
-  res.status(400).send({'errCode':400, 'errMsg': "Bad request: " + err});
+  res.status(400).send(newErrorReturn(400, "Bad request: " + err));
 }
 module.exports.errHandle = errHandle;
 
