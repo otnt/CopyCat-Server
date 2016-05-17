@@ -100,9 +100,19 @@ router.route('/')
 
      assertHeader(req, res, req.log, 'content-type', 'application/json');
 
+     // data is required
+     var data = req.body.data;
+     if (!data) {
+         var msg = "Missing data part in request.";
+         req.log.error(msg);
+         return errHandle.badRequest(res, msg);
+     }
+     data = new Buffer(data, 'base64');
 
+     // ownerId is required
      var userPromise = null;
      var ownerId = req.body.ownerId;
+     // If app provide ownerId, then search for the user
      if(ownerId) {
          // assert user exists
          userPromise = 
@@ -117,44 +127,69 @@ router.route('/')
                return null;
            });
      }
+     // Otherwise, use anonymous user
      else {
          userPromise = 
            models.User.find({ 'name' : 'anonymous' }).then((user) => {
-               console.log("come here");
-               console.log(user[0]);
                ownerId = user[0]._id;
                return null;
            });
      }
-
-
-     //compress photo data
-     function compressPhoto() {
-         var data = req.body.data;
-         if (!data) {
-             var msg = "Missing data part in request.";
-             req.log.error(msg);
-             errHandle.badRequest(res, msg);
-             throw new PromiseReject();
-         }
-         data = new Buffer(data, 'base64');
-
+     
+     //get photo size info
+     function getSize() {
          return new Promise(function(resolve, reject) {
-             gm(data, 'test.jpg')
-                 .setFormat('jpg')
-                 .resize(800, 600)
-                 .quality(80)
-                 .toBuffer(function(err, buffer) {
+             gm(data, 'img')
+                 .size(function(err, size) {
                      if (err) throw err;
 
-                     req.log.info("Compressed new photo.");
-                     resolve(buffer);
+                     req.log.info(size, "Got size of new photo.");
+                     resolve(size);
                  })
-         })
+         });
+     }
+
+     function compressPhoto(size) {
+         let width = size.width;
+         let height = size.height;
+         if(width > config.maxWidth || height > config.maxHeight) {
+             return new Promise(function(resolve, reject) {
+                 const widthScale = width / 800;
+                 const heightScale = height / 800;
+                 const scale = Math.max(widthScale, heightScale);
+                 width = Math.round(width / scale);
+                 height = Math.round(height / scale);
+
+                 gm(data, 'test.jpg')
+                     .setFormat('jpg')
+                     .resize(width, height)
+                     .toBuffer(function(err, buffer) {
+                         if (err) throw err;
+
+                         size = {width, height};
+                         req.log.info(size, "Compressed new photo.");
+                         resolve({ size, buffer });
+                     });
+             });
+         }
+         else {
+             return new Promise(function(resolve, reject) {
+                 gm(data, 'test.jpg')
+                 .toBuffer(function(err, buffer) {
+                     if(err) throw err;
+
+                     req.log.info("No need to compress photo");
+                     resolve({ size, buffer });
+                 });
+             });
+         }
      }
 
      //create a new empty photo(i.e. without imageUrl) in database to get photoId
-     function createNewPhoto(buffer) {
+     function createNewPhoto(sizeBuffer) {
+         var size = sizeBuffer.size;
+         var buffer = sizeBuffer.buffer;
+
          //create new photo
          var photo = {}
          photo.referenceId = req.body.referenceId;
@@ -173,14 +208,16 @@ router.route('/')
                  req.log.info({
                      photo: photo
                  }, "Created new empty photo.");
-                 return { 'id': '' + photo._id, 'buffer': buffer };
+                 var id = '' + photo._id;
+                 return { id, size, buffer };
              });
      }
 
      //upload new photo to AWS S3
-     function uploadPhoto(idBuffer) {
-         const id = idBuffer.id;
-         const buffer = idBuffer.buffer;
+     function uploadPhoto(idSizeBuffer) {
+         const id = idSizeBuffer.id;
+         const size = idSizeBuffer.size;
+         const buffer = idSizeBuffer.buffer;
 
          var params = {
              Bucket: config.s3ImageBucket.name,
@@ -197,28 +234,18 @@ router.route('/')
                      if (err) throw err;
 
                      req.log.info("Uploaded new photo to S3");
-                     resolve([id, data.Location]);
+                     var url = data.Location;
+                     resolve({id, url, size});
                  });
          });
      }
-
-     //get photo size info
-     function getSize(data) {
-         return new Promise(function(resolve, reject) {
-             gm(data, 'img')
-                 .size(function(err, size) {
-                     if (err) throw err;
-
-                     req.log.info("Got size of new photo.");
-                     resolve(size);
-                 })
-         });
-     }
-
+     
      //update photo in database
-     function updatePhoto(idUrl, size) {
-         var id = idUrl[0];
-         var url = idUrl[1];
+     function updatePhoto(idUrlSize) {
+         const id = idUrlSize.id;
+         const url = idUrlSize.url;
+         const size = idUrlSize.size;
+
          return new Promise(function(resolve, reject) {
              models.Photo.findByIdAndUpdate(
                  id, {
@@ -253,31 +280,22 @@ router.route('/')
          logRes(req.log, res);
      }
 
-     /*
-      * get user id -> new empty photo id ->
-      *                                    | -> upload to S3   --|
-      * compress photo data --------------->                     |
-      *                     -                                    | --> update photo in database -> respond
-      *                       -                                  |
-      *                         -                                |
-      *                           ------------> get photo size --|
-      */
-     Promise.join(
-             compressPhoto().then(createNewPhoto).then(uploadPhoto),
-             userPromise.then(compressPhoto).then(getSize),
-
-             updatePhoto
-         )
-         .then(populatePhoto)
-         .then(respond)
-         .catch(function(err) {
-             if (!(err instanceof PromiseReject)) {
-                 req.log.error({
-                     err: err
-                 }, "Unknown error");
-                 errHandle.unknown(res, err);
-             }
-         })
+     userPromise
+     .then(getSize)
+     .then(compressPhoto)
+     .then(createNewPhoto)
+     .then(uploadPhoto)
+     .then(updatePhoto)
+     .then(populatePhoto)
+     .then(respond)
+     .catch(function(err) {
+         if (!(err instanceof PromiseReject)) {
+             req.log.error({
+                 err: err
+             }, "Unknown error");
+             errHandle.unknown(res, err);
+         }
+     })
 
     });
 

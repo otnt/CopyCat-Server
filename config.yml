@@ -37,4 +37,8 @@ instagram: !!map
 # test secret code
 secret: 'copycattest'
 copycattestId: '5737e97e0c7956dc7d4ada47'
+
+# compress parameter
+maxWidth: 800
+maxHeight: 800
   
