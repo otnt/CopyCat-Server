@@ -205,6 +205,8 @@ module.exports.PromiseReject = PromiseReject;
 module.exports.assertExist = function assertExist(obj, objName, res) {
   if (obj === null) {
     errHandle.badRequest(res, 'Missing ' + objName);
+    return false;
   }
+  return true;
 };
 
