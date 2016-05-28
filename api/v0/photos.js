@@ -257,7 +257,7 @@ router.route('/')
 
   // respond
   function respond(photo) {
-    res.sendStatus(201);
+    res.status(201);
     res.send(photo);
     logRes(req.log, res);
   }

@@ -87,7 +87,7 @@ router.route('/')
   // User name must be unique
   models.User.find({ name })
   .then((user) => {
-    if (user) {
+    if (user && user.length > 0) {
       const msg = `User ${name} already exist`;
       req.log.info(msg);
       errHandle.badRequest(res, msg);
@@ -111,7 +111,7 @@ router.route('/')
   })
   // Respond
   .then((user) => {
-    res.sendStatus(201);
+    res.status(201);
     res.send(user);
     req.log.info({ user }, 'User created');
     logRes(req.log, res);
