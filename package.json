@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js | ./node_modules/bunyan/bin/bunyan"
+    "start": "node --use_strict server.js | ./node_modules/bunyan/bin/bunyan"
   },
   "author": "",
   "license": "ISC",

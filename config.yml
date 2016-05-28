@@ -41,4 +41,8 @@ copycattestId: '5737e97e0c7956dc7d4ada47'
 # compress parameter
 maxWidth: 800
 maxHeight: 800
+
+# user
+anonymousUserName: 'anonymous'
+anonymousProfilePictureUrl: 'https://pbs.twimg.com/profile_images/471316589996806145/0oKVzgtV.jpeg'
   

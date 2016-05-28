@@ -70,7 +70,7 @@ router.route('/:id')
  */
 router.use('/', bodyParser.json());
 router.route('/')
-.post(function(req, res, next) {
+.post((req, res) => {
   logReq(req.log, req);
 
   var userPromise = null;

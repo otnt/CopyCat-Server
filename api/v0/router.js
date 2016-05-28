@@ -10,6 +10,7 @@ const heartbeat = require('./heartbeat.js');
 const feedback = require('./feedback.js');
 const instagram = require('./socialmedia/instagram.js');
 const reports = require('./reports.js');
+const users = require('./users.js');
 
 router.use('/promos', promos);
 router.use('/albums', albums);
@@ -20,5 +21,6 @@ router.use('/heartbeat', heartbeat);
 router.use('/feedback', feedback);
 router.use('/instagram', instagram);
 router.use('/reports', reports);
+router.use('/users', users);
 
 module.exports = router;
