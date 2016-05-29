@@ -158,7 +158,7 @@ router.route('/')
           if (err) throw err;
           newSize = { width, height };
           req.log.info(newSize, 'Compressed new photo.');
-          resolve({ newSize, buffer });
+          resolve({ size: newSize, buffer });
         });
       });
     }
