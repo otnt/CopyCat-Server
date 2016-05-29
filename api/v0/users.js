@@ -25,6 +25,28 @@ const logReqIdMiddleware = helper.logReqIdMiddleware;
 router.use(logReqIdMiddleware);
 
 /**
+ * Get all users.
+ */
+router.route('/all')
+.get((req, res) => {
+  logReq(req.log, req);
+
+  models.User.find()
+  // respond
+  .then((user) => {
+    res.send(user);
+    req.log.info({ user }, 'Get all users.');
+    logRes(req.log, res);
+  })
+  .catch((err) => {
+    if (!(err instanceof PromiseReject)) {
+      req.log.error({ err }, 'Unknown error');
+      errHandle.unknown(res, err);
+    }
+  });
+});
+
+/**
  * Get a specific user.
  */
 router.route('/:id')
