@@ -1,3 +1,4 @@
+const CastError = require('mongoose').CastError;
 /**
  * Populate photo id list to album with restriction.
  */
@@ -95,6 +96,17 @@ errHandle.unknown = function(res, err) {
 };
 errHandle.badRequest = function(res, err) {
   res.status(400).send(newErrorReturn(400, "Bad request: " + err));
+}
+// Error handler in catch block in promise chain.
+errHandle.promiseCatchHanler = function(res, log, err) {
+  if (err instanceof CastError) {
+    log.warn({ err }, 'Cast error');
+    errHandle.badRequest(res, err);
+  } else if (!(err instanceof PromiseReject)) {
+    log.error({ err }, 'Unknown error');
+    errHandle.unknown(res, err);
+  }
+  return null;
 }
 module.exports.errHandle = errHandle;
 

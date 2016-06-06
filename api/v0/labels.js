@@ -1,27 +1,25 @@
-'use strict';
+const express = require('express');
+const router = new express.Router();
+const PythonShell = require('python-shell');
 
-var express = require("express");
-var router = express.Router();
-var PythonShell = require('python-shell');
+const helper = require('./helper.js');
+const errHandle = helper.errHandle;
 
-var helper = require("./helper.js");
-var errHandle = helper.errHandle;
+// labels
+router.route('/')
+.get((req, res) => {
+  const imageUrl = req.query.url;
 
-//labels
-router.route("/")
-.get(function(req, res) {
-  var imageUrl = req.query.url;
-
-  var options = {
-    //script path is from entry of node.js program, which is dir of server.js
+  const options = {
+    // script path is from entry of node.js program, which is dir of server.js
     scriptPath: './python_modules/',
-    args: ['AIzaSyC65J_eyq6ZmSK5s_OIFzH8srQsL17NdHs', imageUrl]
+    args: ['AIzaSyA8WAYHLpgXjB2ajsgscSiFlOl05-lTvEA', imageUrl],
   };
-  
-  PythonShell.run('google_vision_label_detection.py', options, function (err, results) {
+
+  PythonShell.run('google_vision_label_detection.py', options, (err, results) => {
     if (err) return errHandle.unknown(res, err);
-    results = JSON.parse(results);
-    res.send(results);
+    res.send(JSON.parse(results));
+    return null;
   });
 });
 

@@ -3,6 +3,7 @@ const router = new express.Router();
 const models = require('../../database/v0/models.js');
 const bodyParser = require('body-parser');
 const config = require('../../config.js');
+const util = require('util');
 
 /**
  * Helper functions
@@ -78,6 +79,107 @@ router.route('/:id')
       errHandle.unknown(res, err);
     }
   });
+});
+
+/**
+ * Get all photos by this user.
+ */
+router.route('/:user/photos')
+.get((req, res) => {
+  logReq(req.log, req);
+
+  const name = req.params.user;
+  models.User.find({ name })
+  // assure user exist
+  .then((user) => {
+    if (!user || user.length === 0) {
+      const msg = util.format('User not found using name %s', name);
+      req.log.warn(msg);
+      errHandle.notFound(res, msg);
+      throw new PromiseReject();
+    }
+    return user._id;
+  })
+  // Find photos using user id
+  .then((id) => models.Photo.find({ ownerId: id }))
+  // respond
+  .then((photos) => {
+    res.send(photos);
+    req.log.info({ photos }, 'Get photos.');
+    logRes(req.log, res);
+  })
+  .catch((err) => errHandle.promiseCatchHanler(res, req.log, err));
+});
+
+/**
+ * Follow a user.
+ */
+router.route('/:follower/follow/:followee')
+.get((req, res) => {
+  logReq(req.log, req);
+
+  const follower = req.params.follower;
+  const followee = req.params.followee;
+  let followerId = null;
+  let followeeId = null;
+
+  // Assert two users exist.
+  models.User.find({ $or:
+  [
+    { name: follower },
+    { name: followee },
+  ] })
+  .then((users) => {
+    if (!users || users.length !== 2) {
+      const msg = util.format('User %s or %s does not exist', follower, followee);
+      req.log.warn(msg);
+      errHandle.notFound(res, msg);
+      throw new PromiseReject();
+    }
+    req.log.info('Found two user');
+    return users;
+  })
+  // Assert follow relationship don't exist.
+  .then((users) => {
+    const followerUser = users[0].name === follower ? users[0] : users[1];
+    const followeeUser = users[0].name === followee ? users[0] : users[1];
+    followerId = followerUser._id;
+    followeeId = followeeUser._id;
+    req.log.info({ follower, followee, followerId, followeeId }, 'User info');
+    const followerUserFollowees = followerUser.followees.filter(
+      (user) => String(user) === String(followeeId));
+    const followeeUserFollowers = followeeUser.followers.filter(
+      (user) => String(user) === String(followerId));
+    if (followerUserFollowees.length !== 0 || followeeUserFollowers.length !== 0) {
+      const msg = util.format('User %s and %s already have follow relationship',
+                              follower, followee);
+      req.log.warn(msg);
+      errHandle.badRequest(res, msg);
+      throw new PromiseReject();
+    }
+    req.log.info('Make sure these two users dont have follow relationship before');
+    return null;
+  })
+  // Update followee -> follower
+  .then(() =>
+    models.User.update(
+      { name: followee },
+      { $push: { followers: followerId } }
+    ))
+  // Update follower -> followee, and return updated follower
+  .then(() =>
+    models.User.findByIdAndUpdate(followerId,
+      { $push: { followees: followeeId } },
+      { new: true }
+    ))
+  // respond
+  .then((followerUser) => {
+    res.status(201);
+    res.send(followerUser);
+    req.log.info('Follow relationship updated.');
+    logRes(req.log, res);
+  })
+  .catch((err) => errHandle.promiseCatchHanler(res, req.log, err));
 });
 
 /**
