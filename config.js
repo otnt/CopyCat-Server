@@ -1,5 +1,5 @@
-var yaml = require('js-yaml');
-var fs   = require('fs');
+const yaml = require('js-yaml');
+const fs = require('fs');
 
-var config = yaml.safeLoad(fs.readFileSync('./config.yml', 'utf8'));
+const config = yaml.safeLoad(fs.readFileSync('./config.yml', 'utf8'));
 module.exports = config;

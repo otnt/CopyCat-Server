@@ -98,7 +98,7 @@ router.route('/:user/photos')
       errHandle.notFound(res, msg);
       throw new PromiseReject();
     }
-    return user._id;
+    return user[0]._id;
   })
   // Find photos using user id
   .then((id) => models.Photo.find({ ownerId: id }))

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = new express.Router();
 const PythonShell = require('python-shell');
-
+const config = require('../../config.js');
 const helper = require('./helper.js');
 const errHandle = helper.errHandle;
 
@@ -13,7 +13,7 @@ router.route('/')
   const options = {
     // script path is from entry of node.js program, which is dir of server.js
     scriptPath: './python_modules/',
-    args: ['AIzaSyA8WAYHLpgXjB2ajsgscSiFlOl05-lTvEA', imageUrl],
+    args: [config.cloudVisionApiKey, imageUrl],
   };
 
   PythonShell.run('google_vision_label_detection.py', options, (err, results) => {

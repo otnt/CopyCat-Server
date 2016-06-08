@@ -46,3 +46,6 @@ maxHeight: 800
 anonymousUserName: 'anonymous'
 anonymousProfilePictureUrl: 'https://pbs.twimg.com/profile_images/471316589996806145/0oKVzgtV.jpeg'
   
+# google cloud vision api key
+cloudVisionApiKey: 'AIzaSyA8WAYHLpgXjB2ajsgscSiFlOl05-lTvEA'
+

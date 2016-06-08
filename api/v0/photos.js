@@ -215,10 +215,10 @@ router.route('/')
 
     return new Promise((resolve) => {
       s3.upload(params)
-      .send((err, data) => {
+      .send((err, d) => {
         if (err) throw err;
         req.log.info('Uploaded new photo to S3');
-        const url = data.Location;
+        const url = d.Location;
         resolve({ id, url, size });
       });
     });
