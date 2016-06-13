@@ -32,16 +32,17 @@ const logRes = helper.logRes;
 const logReqIdMiddleware = helper.logReqIdMiddleware;
 
 /**
+ * Add reqId to each request
+ */
+router.use(logReqIdMiddleware);
+
+/**
  * compress image
  */
 const gm = require('gm').subClass({
   imageMagick: true,
 });
 
-/**
- * Add reqId to each request
- */
-router.use(logReqIdMiddleware);
 
 /**
  * Get a photo speficied by a photoId
@@ -278,6 +279,58 @@ router.route('/')
   });
 
   return null;
+});
+
+router.route('/like')
+.post((req, res) => {
+  logReq(req.log, req);
+
+  const photoId = req.body.photoId;
+  const userId = req.body.userId;
+
+  // Update the photo user liked, to increment like number by 1.
+  const photoUpdateLike = function photoUpdateLike(input) {
+    const _photo = input.photo;
+    const id = _photo._id;
+    return new Promise((resolve) => {
+      models.Photo.findByIdAndUpdate(id,
+      // The inc operation would create like to be 1 if like
+      // does not exist previously.
+      { $inc: { like: 1 } },
+      { new: true },
+      (err, photo) => {
+        if (err) throw err;
+        req.log.info({ photo }, 'Photo got a new like.');
+        resolve(photo);
+      });
+    });
+  };
+
+  // Update user data information, to push the photo to user's
+  // like collection.
+  // TODO: This data is better to be stored in a seperate database,
+  // not the current monolithic one.
+  const userUpdateLike = function userUpdateLike() {
+    return null;
+  };
+
+  const merge = Promise.join(
+    helper.assertUserExistById(userId),
+    helper.assertPhotoExistById(photoId),
+    (user, photo) => {
+      const result = {};
+      result.user = user[0];
+      result.photo = photo[0];
+      return result;
+    });
+
+  Promise.join(
+    merge.then(photoUpdateLike),
+    merge.then(userUpdateLike),
+    () => {
+      res.status(200).send();
+      logRes(req.log, res);
+    });
 });
 
 module.exports = router;

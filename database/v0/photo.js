@@ -11,6 +11,7 @@ module.exports = mongoose.model('Photo',
     time: { type: Date, default: Date.now, required: true },
     height: { type: Number },
     width: { type: Number },
+    like: { type: Number, default: 0 },
   },
   { read: 'primaryPreferred' }
   )

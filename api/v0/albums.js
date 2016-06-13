@@ -7,7 +7,6 @@ const bodyParser = require('body-parser');
  * Helper functions
  */
 const helper = require('./helper.js');
-// const photoIdListPopulate = helper.photoIdListPopulate;
 const errHandle = helper.errHandle;
 const PromiseReject = helper.PromiseReject;
 

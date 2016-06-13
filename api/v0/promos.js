@@ -1,29 +1,26 @@
-'use strict';
-
-var express = require("express");
-var router = express.Router();
-var models = require("../../database/v0/models.js");
-var bodyParser = require('body-parser');
+const express = require("express");
+const router = express.Router();
+const models = require("../../database/v0/models.js");
+const bodyParser = require('body-parser');
 
 /**
  * Helper functions
  */
-var helper = require("./helper.js");
-var photoIdListPopulate = helper.photoIdListPopulate;
-var errHandle = helper.errHandle;
-var PromiseReject = helper.PromiseReject;
+const helper = require('./helper.js');
+const errHandle = helper.errHandle;
+const PromiseReject = helper.PromiseReject;
 
 /**
  * Bluebird made promise easy
  */
-var Promise = require("bluebird");
+const Promise = require('bluebird');
 
 /**
  * log objects and functions
  */
-var logReq = helper.logReq;
-var logRes = helper.logRes;
-var logReqIdMiddleware = helper.logReqIdMiddleware;
+const logReq = helper.logReq;
+const logRes = helper.logRes;
+const logReqIdMiddleware = helper.logReqIdMiddleware;
 
 /**
  * Add reqId to each request

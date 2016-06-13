@@ -1,20 +1,49 @@
 const CastError = require('mongoose').CastError;
-/**
- * Populate photo id list to album with restriction.
- */
+const models = require('../../database/v0/models.js');
+const sprintf = require('sprintf-js').sprintf;
 
-var prefetchPhotoNumber = 10;
-module.exports.photoIdListPopulate = {
-  path: 'photoIdList',
-  options: {limit : 10},//prefetchPhotoNumber},
+/**
+ * PromiseReject, used in Promise chain to as reject method.
+ *
+ * @Deprecated Use PromiseRejectError class instead.
+ */
+const PromiseReject = function PromiseReject(err, message) {
+  this.err = err;
+  this.name = 'MyError';
+  this.message = message;
+  this.stack = (new Error()).stack;
+};
+PromiseReject.prototype = new Error;
+module.exports.PromiseReject = PromiseReject;
+
+/**
+ * A customized Error that is used in Promise chain.
+ * So that we could throw this Error to break out of Promise chain.
+ *
+ * This piece of code is took from:
+ * http://stackoverflow.com/questions/31089801/extending-error-in-javascript-with-es6-syntax
+ *
+ * For now I'm not pretty sure what each line is doing. But hopefully it works.
+ */
+class PromiseRejectError extends Error {
+  constructor(message, errData) {
+    super(message);
+    this.name = this.constructor.name;
+    this.message = message;
+    this.errData = errData;
+    if (typeof Error.captureStackTrace === 'function') {
+      Error.captureStackTrace(this, this.constructor);
+    } else {
+      this.stack = (new Error(message)).stack;
+    }
+  }
 }
 
 /**
  * Timeline style query parameters
  */
 module.exports.getTimelineStyleQuery = function getTimelineStyleQuery(query, log, res) {
-  return new Promise(function(resolve, reject) {
-
+  return new Promise((resolve, reject) => {
     try {
     var queryCondition = {};
 
@@ -74,31 +103,27 @@ module.exports.assertHeader = function(req, res, log, name, wanted) {
   return true;
 };
 
-
 /**
  * Error handling.
  * Given error type, respond object.
  */
 
 function newErrorReturn(code, errMsg) {
-    return {
-        code, 
-        errMsg,
-    };
+  return { code, errMsg };
 }
 
-var errHandle = function() {}
-errHandle.notFound = function(res, err) {
-  res.status(404).send(newErrorReturn(404, "Not found: " + err));
+const errHandle = function errHandle() {};
+errHandle.notFound = (res, err) => {
+  res.status(404).send(newErrorReturn(404, sprintf('Not found: %j', err)));
 };
-errHandle.unknown = function(res, err) {
-  res.status(500).send(newErrorReturn(500, "Unknown error: " + err));
+errHandle.unknown = (res, err) => {
+  res.status(500).send(newErrorReturn(500, sprintf('Unknown error: %j', err)));
 };
-errHandle.badRequest = function(res, err) {
-  res.status(400).send(newErrorReturn(400, "Bad request: " + err));
-}
+errHandle.badRequest = (res, err) => {
+  res.status(400).send(newErrorReturn(400, sprintf('Bad request: %j', err)));
+};
 // Error handler in catch block in promise chain.
-errHandle.promiseCatchHanler = function(res, log, err) {
+errHandle.promiseCatchHanler = (res, log, err) => {
   if (err instanceof CastError) {
     log.warn({ err }, 'Cast error');
     errHandle.badRequest(res, err);
@@ -107,7 +132,7 @@ errHandle.promiseCatchHanler = function(res, log, err) {
     errHandle.unknown(res, err);
   }
   return null;
-}
+};
 module.exports.errHandle = errHandle;
 
 
@@ -115,8 +140,8 @@ module.exports.errHandle = errHandle;
  * Logger system.
  */
 
-var bunyan = require('bunyan');
-var uuid = require('node-uuid');
+const bunyan = require('bunyan');
+const uuid = require('node-uuid');
 
 function photoSerializer(photo) {
   return {
@@ -129,62 +154,62 @@ function editorSerializer(editor) {
   return {
     id: editor._id,
     name: editor.name,
-  }
+  };
 }
 function albumSerializer(album) {
   return {
     id: album._id,
     name: album.name,
     imageUrl: album.imageUrl,
-  }
+  };
 }
 function userSerializer(user) {
   return {
     id: user._id,
     name: user.name,
-  }
+  };
 }
 function reqSerializer(req) {
   return {
     method: req.method,
     url: req.originalUrl,
-  }
+  };
 }
 function resSerializer(res) {
   return {
     statusCode: res.statusCode,
     statusMessage: res.statusMessage,
-  }
+  };
 }
-var log = bunyan.createLogger({
-    name: 'copycat',
-    streams: [
-      {
-        level: 'trace',
-        stream: process.stdout  // log TRACE and above to stdout
-      },
-      {
-        level: 'debug',
-        path: './log/copycat-debug.logfile' // log DEBUG and above to a file
-      },
-      {
-        level: 'info',
-        path: './log/copycat-info.logfile' // log INFO and above to a file
-      },
-      {
-        level: 'error',
-        path: './log/copycat-error.logfile' // log ERROR and above to a file
-      },
-    ],
-    serializers: {
-      err: bunyan.stdSerializers.err,
-      req: reqSerializer,
-      res: resSerializer,
-      photo: photoSerializer,
-      album: albumSerializer,
-      editor: editorSerializer,
-      user: userSerializer,
+const log = bunyan.createLogger({
+  name: 'copycat',
+  streams: [
+    {
+      level: 'trace',
+      stream: process.stdout,  // log TRACE and above to stdout
     },
+    {
+      level: 'debug',
+      path: './log/copycat-debug.logfile', // log DEBUG and above to a file
+    },
+    {
+      level: 'info',
+      path: './log/copycat-info.logfile', // log INFO and above to a file
+    },
+    {
+      level: 'error',
+      path: './log/copycat-error.logfile', // log ERROR and above to a file
+    },
+  ],
+  serializers: {
+    err: bunyan.stdSerializers.err,
+    req: reqSerializer,
+    res: resSerializer,
+    photo: photoSerializer,
+    album: albumSerializer,
+    editor: editorSerializer,
+    user: userSerializer,
+  },
 });
 module.exports.log = log;
 
@@ -199,16 +224,6 @@ module.exports.logRes = function logReq(log, res) {
   log.info({res:res}, "New response");
 }
 
-/**
- * PromiseReject, used in Promise to as reject method
- */
-function PromiseReject(message) {
-    this.name = 'MyError';
-    this.message = message;
-    this.stack = (new Error()).stack;
-}
-PromiseReject.prototype = new Error; 
-module.exports.PromiseReject = PromiseReject;
 
 /**
  * Assert some field exist, otherwise return error badRequest
@@ -221,4 +236,46 @@ module.exports.assertExist = function assertExist(obj, objName, res) {
   }
   return true;
 };
+
+/**
+ * Assert each id exist for corresponding database
+ */
+
+const assertExistById = function assertExistById(model, idList, message) {
+  return model.find({ $or: idList })
+    .then((result) => {
+      if (result === null || result.length !== idList.length) {
+        throw new PromiseRejectError(idList, message);
+      }
+      return result;
+    });
+};
+
+const assertUsersExistById = function assertUsersExistById(userIdList) {
+  return assertExistById(models.User, userIdList,
+  'Not all users exist in user id list.');
+};
+
+const assertUserExistById = function assertUserExistById(userId) {
+  const userIdList = [];
+  userIdList.push({ _id: userId });
+  return assertUsersExistById(userIdList);
+};
+
+const assertPhotosExistById = function assertPhotosExistById(photoIdList) {
+  return assertExistById(models.Photo, photoIdList,
+  'Not all photos exist in user id list.');
+};
+
+const assertPhotoExistById = function assertPhotoExistById(photoId) {
+  const photoIdList = [];
+  photoIdList.push({ _id: photoId });
+  return assertPhotosExistById(photoIdList);
+};
+
+module.exports.assertExistById = assertExistById;
+module.exports.assertUsersExistById = assertUsersExistById;
+module.exports.assertUserExistById = assertUserExistById;
+module.exports.assertPhotosExistById = assertPhotosExistById;
+module.exports.assertPhotoExistById = assertPhotoExistById;
 
