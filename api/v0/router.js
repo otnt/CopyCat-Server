@@ -12,7 +12,6 @@ const instagram = require('./socialmedia/instagram.js');
 const reports = require('./reports.js');
 const users = require('./users.js');
 const smartExperiment = require('./experiment/smart.js');
-const like = require('./like.js');
 
 router.use('/promos', promos);
 router.use('/albums', albums);
@@ -25,6 +24,5 @@ router.use('/instagram', instagram);
 router.use('/reports', reports);
 router.use('/users', users);
 router.use('/smart', smartExperiment);
-router.use('/like', like);
 
 module.exports = router;
