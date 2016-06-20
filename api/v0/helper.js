@@ -38,6 +38,7 @@ class PromiseRejectError extends Error {
     }
   }
 }
+module.exports.PromiseRejectError = PromiseRejectError;
 
 /**
  * Timeline style query parameters
@@ -138,6 +139,8 @@ module.exports.errHandle = errHandle;
 
 /**
  * Logger system.
+ *
+ * @Deprecated Use 'utils/logger.js' instead.
  */
 
 const bunyan = require('bunyan');
@@ -214,15 +217,16 @@ const log = bunyan.createLogger({
 module.exports.log = log;
 
 module.exports.logReqIdMiddleware = function logReqIdMiddleware(req, res, next) {
-  req.log = log.child({reqId: uuid.v1()});
+  req.log = log.child({ reqId: uuid.v1() });
   next();
 };
 module.exports.logReq = function logReq(log, req) {
-  log.info({req:req}, "New request");
-}
+  log.info({ req }, 'New request');
+};
 module.exports.logRes = function logReq(log, res) {
-  log.info({res:res}, "New response");
-}
+  log.info({ res }, 'New response');
+};
+
 
 
 /**
