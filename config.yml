@@ -50,3 +50,8 @@ anonymousUserId: '5750b56d7b2d281600a5af06'
 # google cloud vision api key
 cloudVisionApiKey: 'AIzaSyA8WAYHLpgXjB2ajsgscSiFlOl05-lTvEA'
 
+# Flickr api key
+flickrApiKey: 'f91a179a286be8256e0ca7624f254642'
+
+# 500px consumer key
+consumerKey500px: '1f9RPmVvLJIhtdq6CsSiVUVuCQsaNmeqy0r79A6b'

@@ -289,7 +289,7 @@ router.route('/like')
   if (!photoId) {
     const msg = "Missing photoId";
     req.log.warn(msg);
-    return errHandle.badRequest(msg);
+    return errHandle.badRequest(res, msg);
   }
   let userId = req.body.userId;
   if (!userId) {
