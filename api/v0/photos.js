@@ -291,7 +291,7 @@ router.route('/like')
     req.log.warn(msg);
     return errHandle.badRequest(msg);
   }
-  const userId = req.body.userId;
+  let userId = req.body.userId;
   if (!userId) {
     userId = config.anonymousUserId;
   }
