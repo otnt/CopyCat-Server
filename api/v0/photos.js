@@ -286,7 +286,15 @@ router.route('/like')
   logReq(req.log, req);
 
   const photoId = req.body.photoId;
+  if (!photoId) {
+    const msg = "Missing photoId";
+    req.log.warn(msg);
+    return errHandle.badRequest(msg);
+  }
   const userId = req.body.userId;
+  if (!userId) {
+    userId = config.anonymousUserId;
+  }
 
   // Update the photo user liked, to increment like number by 1.
   const photoUpdateLike = function photoUpdateLike(input) {
