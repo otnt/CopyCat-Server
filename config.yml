@@ -20,7 +20,7 @@ credential: !!map
 
 # server port
 httpPort: 80
-httpDevPort: 3000
+httpDevPort: 3001
 httpsPort: 443
 
 # s3 image bucket name
