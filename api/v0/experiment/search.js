@@ -42,6 +42,20 @@ router.route('/')
   }
   const labels = req.query.labels.split(',');
 
+  /*
+   * Search response JSON Format:
+   * {
+   *   urls: {
+   *     regular: 'photo_url',
+   *   },
+   *   user: {
+   *     name: 'name',
+   *     profile_image: 'profile_url',
+   *   },
+   *   created_at: 'yyyy-MM-ddTHH:mm:ss-xx:xx',
+   * }
+   */
+
   const getUnsplashPhotos = function getUnsplashPhotos(_labels) {
     req.log.info('Request photos from unsplash.com');
     const labelString = _labels.join(',').replace(/\s+/g, '%20');
@@ -52,22 +66,17 @@ router.route('/')
       const d = JSON.parse(body);
       const photos = [];
       for (let i = 0; i < d.length; i++) {
-        const newImage = {};
-        newImage.url = d[i].urls.regular;
-        newImage.categories = [];
-        for (let j = 0; j < d[i].categories.length; j++) {
-          newImage.categories.push(d[i].categories[j].title);
-        }
-        newImage.source = 'unsplash';
-        newImage.user = {
-          name: 'Unsplash',
-          profile_image: {
-            small: config.anonymousProfilePictureUrl,
+        photos.push({
+          urls: {
+            regular: d[i].urls.regular,
           },
-        };
-        photos.push(newImage);
+          user: {
+            name: d[i].user.name + ' (Unsplash)',
+            profile_image: d[i].user.profile_image,
+          },
+          created_at: d[i].created_at,
+        });
       }
-
       resolve(photos);
     }));
   };
@@ -83,25 +92,19 @@ router.route('/')
       const photos = [];
       const rawPhotoData = d.photos.photo;
       for (let i = 0; i < rawPhotoData.length; ++i) {
-        const rawPhotoElement = rawPhotoData[i];
-        const id = rawPhotoElement.id;
-        const farm = rawPhotoElement.farm;
-        const secret = rawPhotoElement.secret;
-        const server = rawPhotoElement.server;
-        const title = rawPhotoElement.title;
         photos.push({
-          url: util.format('https://farm%d.staticflickr.com/%s/%s_%s_c.jpg', farm, server, id, secret),
-          title,
-          source: 'flickr',
+          urls: {
+              regular: util.format('https://farm%d.staticflickr.com/%s/%s_%s_c.jpg', farm, server, id, secret),
+          },
           user: {
             name: 'Flickr',
             profile_image: {
               small: config.anonymousProfilePictureUrl,
             },
           },
+          created_at: '2016-02-10T10:49:02-04:00',
         });
       }
-
       resolve(photos);
     }));
   };
@@ -118,15 +121,18 @@ router.route('/')
       const rawPhotoData = d.photos;
       for (let i = 0; i < rawPhotoData.length; ++i) {
         const rawPhotoElement = rawPhotoData[i];
-        const url = rawPhotoElement.images[0].url;
-        const user = {
-          name: util.format('500px %s %s', rawPhotoElement.user.firstname,
-            rawPhotoElement.user.lastname),
-          profile_image: rawPhotoElement.user.userpic_url,
-        };
-        photos.push({ url, user });
+        photos.push({
+          urls: {
+            regular: rawPhotoElement.images[0].url
+          },
+          user: {
+            name: util.format('%s %s (500px)', rawPhotoElement.user.firstname,
+              rawPhotoElement.user.lastname),
+            profile_image: rawPhotoElement.user.userpic_url,
+          },
+          created_at: rawPhotoElement.created_at,
+        });
       }
-
       resolve(photos);
     }));
   };
@@ -135,30 +141,13 @@ router.route('/')
     getUnsplashPhotos(labels),
     getFlickrPhotos(labels),
     get500PXPhotos(labels),
-    // (unsplashPhotos, flickrPhotos) => {
-    //   let photos = [];
-    //   photos = photos.concat(unsplashPhotos);
-    //   photos = photos.concat(flickrPhotos);
-    //   return photos;
-    // })
-    // Just for hack
     (unsplashPhotos, flickrPhotos, px500Photos) => {
-      const photos = [];
       let rawPhotos = [];
       rawPhotos = rawPhotos.concat(unsplashPhotos);
       rawPhotos = rawPhotos.concat(px500Photos);
       rawPhotos = rawPhotos.concat(flickrPhotos);
-      for (let i = 0; i < rawPhotos.length; ++i) {
-        photos.push({
-          urls: {
-            regular: rawPhotos[i].url,
-          },
-          user: rawPhotos[i].user,
-          created_at: '2016-02-10T10:49:02-04:00',
-        });
-      }
 
-      return photos;
+      return rawPhotos;
     })
   .then((photos) => {
     res.status(200).send(photos);
