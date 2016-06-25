@@ -152,7 +152,12 @@ router.route('/')
       rawPhotos = rawPhotos.concat(px500Photos);
       rawPhotos = rawPhotos.concat(flickrPhotos);
 
-      return rawPhotos;
+      const photos = [];
+      for (let i = 0; i < Math.max(config.maximumSearchPhotoNumber, rawPhotos.length); ++i) {
+        photos.push(rawPhotos[i]);
+      }
+
+      return photos;
     })
   .then((photos) => {
     res.status(200).send(photos);
