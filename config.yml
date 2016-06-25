@@ -55,3 +55,6 @@ flickrApiKey: 'f91a179a286be8256e0ca7624f254642'
 
 # 500px consumer key
 consumerKey500px: '1f9RPmVvLJIhtdq6CsSiVUVuCQsaNmeqy0r79A6b'
+
+# Search photo number maximum
+maximumSearchPhotoNumber: 50
