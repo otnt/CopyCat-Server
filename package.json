@@ -23,7 +23,8 @@
     "bluebird": "^3.3.4",
     "sprintf-js": "^1.0.3",
     "js-yaml": "^3.5.5",
-    "nodemailer": "^2.3.1"
+    "nodemailer": "^2.3.1",
+    "argparse": "^1.0.7"
   },
   "devDependencies": {
     "eslint": "^2.7.0",
