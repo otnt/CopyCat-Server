@@ -92,9 +92,14 @@ router.route('/')
       const photos = [];
       const rawPhotoData = d.photos.photo;
       for (let i = 0; i < rawPhotoData.length; ++i) {
+        const rawPhotoElement = rawPhotoData[i];
+        const id = rawPhotoElement.id;
+        const farm = rawPhotoElement.farm;
+        const secret = rawPhotoElement.secret;
+        const server = rawPhotoElement.server;
         photos.push({
           urls: {
-              regular: util.format('https://farm%d.staticflickr.com/%s/%s_%s_c.jpg', farm, server, id, secret),
+            regular: util.format('https://farm%d.staticflickr.com/%s/%s_%s_c.jpg', farm, server, id, secret),
           },
           user: {
             name: 'Flickr',
@@ -123,7 +128,7 @@ router.route('/')
         const rawPhotoElement = rawPhotoData[i];
         photos.push({
           urls: {
-            regular: rawPhotoElement.images[0].url
+            regular: rawPhotoElement.images[0].url,
           },
           user: {
             name: util.format('%s %s (500px)', rawPhotoElement.user.firstname,
