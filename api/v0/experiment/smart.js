@@ -7,6 +7,11 @@ const util = require('util');
 const helper = require('../helper.js');
 
 /**
+ * Bluebird made promise easy
+ */
+const Promise = require('bluebird');
+
+/**
  * helper functions and objects
  */
 const errHandle = helper.errHandle;
@@ -90,7 +95,7 @@ router.route('/')
     });
   }
 
-  const getLabels = function getLabels(d) {
+  const getGoogleLabels = function getGoogleLabels(d) {
     req.log.info('Requesting label from Google Cloud Vision API');
 
     return new Promise((resolve) => request({
@@ -123,25 +128,49 @@ router.route('/')
     }));
   };
 
-  const getRelatedPhoto = function getRelatedPhoto(labels) {
-    req.log.info('Request photos from unsplash.com');
+  const getClarifaiLabels = function getClarifaiLabels(d) {
+    req.log.info('Requesting label from Clarifai API');
+
+    return new Promise((resolve) => request({
+      url: util.format('https://api.clarifai.com/v1/tag/?access_token=CodNXTFfVKHtK1QIHizgAXn5bLFyLv'),
+      method: 'POST',
+      json: {
+        encoded_data: d,
+      },
+    }, (err, response, body) => {
+      if (body !== null && body.status_code === 'OK') {
+        const labels = [];
+        const tags = body.results[0].result.tag.classes;
+        const probs = body.results[0].result.tag.probs;
+
+        if (tags.length === 0 || probs.length === 0) {
+          const msg = 'No annotation found';
+          req.log.info(msg);
+          res.send({});
+          throw new PromiseReject();
+        }
+
+        // Only puts if score higher than 0.9
+        for (let i = 0; i < tags.length; i++) {
+          if (probs[i] > 0.9) {
+            labels.push(tags[i]);
+          }
+        }
+        resolve(labels);
+      }
+    }));
+  };
+  const getRelatedPhoto = function getRelatedPhoto(googleLabels, clarifaiLabels) {
+    req.log.info('Request photos from popular websites.');
+    let labels = [].concat(googleLabels).concat(clarifaiLabels);
+    labels = labels.splice(0, 3);
+
     const labelString = labels.join(',').replace(/\s+/g, '%20');
     return new Promise((resolve) => request({
-      url: util.format('https://api.unsplash.com/photos/search?query=%s&client_id=6aeca0a320939652cbb91719382190478eee706cdbd7cfa8774138a00dd81fab', labelString),
+      url: util.format('http://%s/api/v0/search?labels=%s', config.loadBalancer, labelString),
       method: 'GET',
     }, (err, response, body) => {
-      const d = JSON.parse(body);
-      const photos = [];
-      for (let i = 0; i < d.length; i++) {
-        const newImage = {};
-        newImage.url = d[i].urls.regular;
-        newImage.categories = [];
-        for (let j = 0; j < d[i].categories.length; j++) {
-          newImage.categories.push(d[i].categories[j].title);
-        }
-        photos.push(newImage);
-      }
-      resolve({ labels, photos });
+      resolve(JSON.parse(body));
     }));
   };
 
@@ -153,10 +182,12 @@ router.route('/')
   }
 
   // getSize()
-  // .then(compressPhoto)
-  compressPhoto()
-  .then(getLabels)
-  .then(getRelatedPhoto)
+  const compressedPhoto = compressPhoto();
+  Promise.join(
+    compressedPhoto.then(getGoogleLabels),
+    compressedPhoto.then(getClarifaiLabels),
+    getRelatedPhoto
+  )
   .then(respond)
   .catch((err) => errHandle.promiseCatchHanler(res, req.log, err));
 
