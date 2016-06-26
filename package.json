@@ -24,11 +24,14 @@
     "sprintf-js": "^1.0.3",
     "js-yaml": "^3.5.5",
     "nodemailer": "^2.3.1",
-    "argparse": "^1.0.7"
+    "argparse": "^1.0.7",
+    "mocha": "^2.5.0",
+    "chai": "^3.5.0"
   },
   "devDependencies": {
     "eslint": "^2.7.0",
     "eslint-config-airbnb": "^6.2.0",
-    "eslint-plugin-react": "^4.3.0"
+    "eslint-plugin-react": "^4.3.0",
+    "nock": "^8.0.0"
   }
 }
