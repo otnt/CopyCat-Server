@@ -22,7 +22,6 @@ const ArgumentParser = require('argparse').ArgumentParser;
 
 server.use('/api/v0', routerV0);
 server.use('/privacy-policy', express.static('privacy-policy'));
-server.use('/test', express.static('da'));
 
 console.log(process.argv);
 
