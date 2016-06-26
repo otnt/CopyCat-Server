@@ -153,7 +153,7 @@ router.route('/')
       rawPhotos = rawPhotos.concat(flickrPhotos);
 
       const photos = [];
-      for (let i = 0; i < Math.max(config.maximumSearchPhotoNumber, rawPhotos.length); ++i) {
+      for (let i = 0; i < Math.min(config.maximumSearchPhotoNumber, rawPhotos.length); ++i) {
         photos.push(rawPhotos[i]);
       }
 
