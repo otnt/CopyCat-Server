@@ -24,28 +24,13 @@ server.use('/api/v0', routerV0);
 server.use('/privacy-policy', express.static('privacy-policy'));
 server.use('/test', express.static('da'));
 
-// Argument parser.
-const parser = new ArgumentParser({
-  version: '0.0.1',
-  addHelp:true,
-  description: 'Run "sudo npm start [--dev]"'
-});
-parser.addArgument(
-  [ '--dev' ],
-  {
-    help: 'Only use 3000 port to test, useful to test on local machine.'
-  }
-);
-const args = parser.parseArgs();
+console.log(process.argv);
 
-if (args.hasOwnProperty('dev')) {
-  // For dev.
-  server.listen(config.httpDevPort, () => {
-    console.log(sprintf('copy cat listening on port %d !', config.httpDevPort));
-  });
-} else {
-  // For prod.
-  server.listen(config.httpPort, () => {
-    console.log(sprintf('copy cat listening on port %d !', config.httpPort));
-  });
-}
+// For dev.
+server.listen(config.httpDevPort, () => {
+  console.log(sprintf('copy cat listening on port %d !', config.httpDevPort));
+});
+// For prod.
+server.listen(config.httpPort, () => {
+  console.log(sprintf('copy cat listening on port %d !', config.httpPort));
+});
