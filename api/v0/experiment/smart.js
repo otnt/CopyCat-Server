@@ -162,15 +162,15 @@ router.route('/')
   };
   const getRelatedPhoto = function getRelatedPhoto(googleLabels, clarifaiLabels) {
     req.log.info('Request photos from popular websites.');
-    let labels = [].concat(googleLabels).concat(clarifaiLabels);
-    labels = labels.splice(0, 3);
+    const allLabels = [].concat(googleLabels).concat(clarifaiLabels);
+    const labels = allLabels.splice(0, 3);
 
     const labelString = labels.join(',').replace(/\s+/g, '%20');
     return new Promise((resolve) => request({
       url: util.format('http://%s/api/v0/search?labels=%s', config.loadBalancer, labelString),
       method: 'GET',
     }, (err, response, body) => {
-      resolve(JSON.parse(body));
+      resolve({ labels: allLabels, photos: JSON.parse(body) });
     }));
   };
 
