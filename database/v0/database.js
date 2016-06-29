@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-const vsprintf = require('sprintf-js').vsprintf;
 const config = require('../../config.js');
+const util = require('util');
 
 const replicationSetMember = config.replicaAddr;
 console.log('connecting to databases: ' + replicationSetMember);
