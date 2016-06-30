@@ -18,7 +18,7 @@ RUN npm install
 ADD . /workspace
 
 # Expose port
-EXPOSE 80 3000
+EXPOSE 3001
 
 # Run app using nodemon
 #CMD ["npm", "start"]
