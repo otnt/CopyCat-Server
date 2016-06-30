@@ -25,8 +25,7 @@ credential: !!map
   region: us-east-1
 
 # server port
-httpPort: 80
-httpDevPort: 3001
+httpPort: 3001
 httpsPort: 443
 
 # s3 image bucket name
@@ -61,6 +60,9 @@ flickrApiKey: 'f91a179a286be8256e0ca7624f254642'
 
 # 500px consumer key
 consumerKey500px: '1f9RPmVvLJIhtdq6CsSiVUVuCQsaNmeqy0r79A6b'
+
+# Unsplash client id
+unsplashClientId: '6aeca0a320939652cbb91719382190478eee706cdbd7cfa8774138a00dd81fab'
 
 # Search photo number maximum
 maximumSearchPhotoNumber: 50
