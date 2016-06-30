@@ -7,9 +7,10 @@
 loadBalancer : 'CopyCatLoadBalancer-426137485.us-east-1.elb.amazonaws.com'
 
 # MongoDB replica set address
-# - '54.88.43.114:27017'
-# - '52.23.175.93:27017'
-# - '54.165.55.62:27017'
+# replicaAddr: !!seq
+#  - '54.88.43.114:27017'
+#  - '52.23.175.93:27017'
+#  - '54.165.55.62:27017'
 replicaAddr: !!seq
  - '172.31.59.129:27017'
  - '172.31.49.28:27017'
