@@ -1,8 +1,19 @@
 const express = require('express');
 const router = new express.Router();
-const models = require('../../database/v0/models.js');
+const models = require('../../database/models.js');
 const bodyParser = require('body-parser');
 const config = require('../../config.js');
+const Log = require('../../utils/logger.js');
+const util = require('util');
+const assertExist = require('../../utils/assertExist.js');
+
+/**
+ * Error handler and self-defined error class.
+ */
+const errLib = require('../../utils/error.js');
+const errorHandler = errLib.errorHandler;
+const DocumentNotFoundError = errLib.DocumentNotFoundError;
+const BadRequestError = errLib.BadRequestError;
 
 /**
  * Bluebird made promise easy
@@ -17,26 +28,6 @@ AWS.config = new AWS.Config(config.credential);
 const s3 = new AWS.S3();
 
 /**
- * helper functions and objects
- */
-const helper = require('./helper.js');
-const assertHeader = helper.assertHeader;
-const errHandle = helper.errHandle;
-const PromiseReject = helper.PromiseReject;
-
-/**
- * log objects and functions
- */
-const logReq = helper.logReq;
-const logRes = helper.logRes;
-const logReqIdMiddleware = helper.logReqIdMiddleware;
-
-/**
- * Add reqId to each request
- */
-router.use(logReqIdMiddleware);
-
-/**
  * compress image
  */
 const gm = require('gm').subClass({
@@ -49,7 +40,8 @@ const gm = require('gm').subClass({
  */
 router.route('/:id')
 .get((req, res) => {
-  logReq(req.log, req);
+  const log = new Log(req, res);
+  log.logReq();
 
   const id = req.params.id;
   // find photo by id
@@ -57,27 +49,22 @@ router.route('/:id')
     .populate({ path: 'ownerId' })
     // assure photo exists
     .then((photo) => {
-      if (!photo) {
-        const msg = 'Photo not found when get photo by id';
-        req.log.warn(msg);
-        errHandle.notFound(res, msg);
-        throw new PromiseReject();
+      if (!photo || photo.length === 0) {
+        const msg = util.format('Photo not found when get photo by id: %s', id);
+        throw new DocumentNotFoundError(msg);
       }
 
-      req.log.info({ photo }, 'Photo found');
+      log.info({ photo }, 'Photo found');
       return photo;
     })
     // respond
     .then((photo) => {
       res.send(photo);
-      logRes(req.log, res);
+      log.logRes();
     })
     // error handling
     .catch((err) => {
-      if (!(err instanceof PromiseReject)) {
-        req.log.error({ err }, 'Unknown error');
-        errHandle.unknown(res, err);
-      }
+      errorHandler.handle(err, log, res);
     });
 });
 
@@ -90,43 +77,37 @@ router.use(bodyParser.json({
 }));
 router.route('/')
 .post((req, res) => {
-  logReq(req.log, req);
-
-  assertHeader(req, res, req.log, 'content-type', 'application/json');
+  const log = new Log(req, res);
+  log.logReq();
 
   // data is required
   let data = req.body.data;
   if (!data) {
     const msg = 'Missing data part in request.';
-    req.log.error(msg);
-    return errHandle.badRequest(res, msg);
+    return errorHandler.handle(new BadRequestError(msg), log, res);
   }
   data = new Buffer(data, 'base64');
 
-  // ownerId is required
-  let userPromise = null;
+  // If ownerId is provided, then we know who is user,
+  // otherwise, we use anonymous user instead.
   let ownerId = req.body.ownerId;
-  // If app provide ownerId, then search for the user
-  if (ownerId) {
-    // assert user exists
-    userPromise = models.User.findById(ownerId).then((user) => {
-      if (!user) {
-        const msg = 'User does not exist';
-        req.log.error(msg);
-        errHandle.badRequest(res, msg);
-        throw new PromiseReject();
-      }
-      return null;
-    });
-  } else {
-  // Otherwise, use anonymous user
-    userPromise = models.User.find({
+  const userPromise = function userPromise() {
+    if (ownerId) {
+      return models.User.findById(ownerId).then((user) => {
+        if (!user || user.length === 0) {
+          const msg = util.format('User does not exist with ownerId: %s', ownerId);
+          throw new BadRequestError(msg);
+        }
+        return ownerId;
+      });
+    }
+    return models.User.find({
       name: config.anonymousUserName,
     }).then((user) => {
       ownerId = user[0]._id;
-      return null;
+      return ownerId;
     });
-  }
+  };
 
   // get photo size info
   function getSize() {
@@ -134,7 +115,7 @@ router.route('/')
       gm(data, 'img')
       .size((err, size) => {
         if (err) throw err;
-        req.log.info(size, 'Got size of new photo.');
+        log.info(size, 'Got size of new photo.');
         resolve(size);
       });
     });
@@ -144,6 +125,7 @@ router.route('/')
     let width = size.width;
     let height = size.height;
     let newSize = {};
+    // If photo size is too large, we compress it.
     if (width > config.maxWidth || height > config.maxHeight) {
       return new Promise((resolve) => {
         const widthScale = width / 800;
@@ -158,22 +140,23 @@ router.route('/')
         .toBuffer((err, buffer) => {
           if (err) throw err;
           newSize = { width, height };
-          req.log.info(newSize, 'Compressed new photo.');
+          log.info(newSize, 'Compressed new photo.');
           resolve({ size: newSize, buffer });
         });
       });
     }
+    // Otherwise, we don't do anything about it.
     return new Promise((resolve) => {
       gm(data, 'test.jpg')
       .toBuffer((err, buffer) => {
         if (err) throw err;
-        req.log.info('No need to compress photo');
+        log.info('No need to compress photo');
         resolve({ size, buffer });
       });
     });
   }
 
-  // create a new empty photo(i.e. without imageUrl) in database to get photoId
+  // Create a new empty photo(i.e. without imageUrl) in database to get photoId.
   function createNewPhoto(sizeBuffer) {
     const size = sizeBuffer.size;
     const buffer = sizeBuffer.buffer;
@@ -186,15 +169,13 @@ router.route('/')
 
     return models.Photo.create(newPhoto)
     .then((photo) => {
-      if (!photo) {
-        const msg = 'Create photo failed';
-        req.log.warn(msg);
-        errHandle.unknown(res, msg);
-        throw new PromiseReject();
+      if (!photo || photo.length === 0) {
+        const msg = util.format('Create photo failed (maybe photo already exist): %j', newPhoto);
+        throw new BadRequestError(msg);
       }
 
-      req.log.info({ photo }, 'Created new empty photo.');
-      const id = `${photo._id}`;
+      log.info({ photo }, 'Created new empty photo.');
+      const id = util.format('%s', photo._id);
       return { id, size, buffer };
     });
   }
@@ -218,7 +199,7 @@ router.route('/')
       s3.upload(params)
       .send((err, d) => {
         if (err) throw err;
-        req.log.info('Uploaded new photo to S3');
+        log.info('Uploaded new photo to S3.');
         const url = d.Location;
         resolve({ id, url, size });
       });
@@ -241,29 +222,29 @@ router.route('/')
           },
         },
         {
-          new: true,
-        }, // set true to return modified data
+          new: true, // set true to return modified data
+        },
         (err, photo) => {
           if (err) throw err;
-          req.log.info({ photo }, 'Updated new photo.');
+          log.info({ photo }, 'Updated new photo.');
           resolve(photo);
         }
       );
     });
   }
 
+  // Return photo with User information.
   function populatePhoto(photo) {
     return models.Photo.populate(photo, { path: 'ownerId', model: 'User' });
   }
 
   // respond
   function respond(photo) {
-    res.status(201);
-    res.send(photo);
-    logRes(req.log, res);
+    res.status(201).send(photo);
+    log.logRes();
   }
 
-  userPromise
+  userPromise()
   .then(getSize)
   .then(compressPhoto)
   .then(createNewPhoto)
@@ -272,24 +253,24 @@ router.route('/')
   .then(populatePhoto)
   .then(respond)
   .catch((err) => {
-    if (!(err instanceof PromiseReject)) {
-      req.log.error({ err }, 'Unknown error');
-      errHandle.unknown(res, err);
-    }
+    errorHandler.handle(err, log, res);
   });
 
   return null;
 });
 
+/**
+ * Used to let users 'like' a photo.
+ */
 router.route('/like')
 .post((req, res) => {
-  logReq(req.log, req);
+  const log = new Log(req, res);
+  log.logReq();
 
   const photoId = req.body.photoId;
   if (!photoId) {
-    const msg = "Missing photoId";
-    req.log.warn(msg);
-    return errHandle.badRequest(res, msg);
+    const msg = 'Missing photoId';
+    return errorHandler.handle(new BadRequestError(msg), log, res);
   }
   let userId = req.body.userId;
   if (!userId) {
@@ -308,7 +289,7 @@ router.route('/like')
       { new: true },
       (err, photo) => {
         if (err) throw err;
-        req.log.info({ photo }, 'Photo got a new like.');
+        log.info({ photo }, 'Photo got a new like.');
         resolve(photo);
       });
     });
@@ -318,13 +299,14 @@ router.route('/like')
   // like collection.
   // TODO: This data is better to be stored in a seperate database,
   // not the current monolithic one.
-  const userUpdateLike = function userUpdateLike() {
-    return null;
+  const userUpdateLike = function userUpdateLike(input) {
+    return input.user;
   };
 
+  // Assert both user and photo exist.
   const merge = Promise.join(
-    helper.assertUserExistById(userId),
-    helper.assertPhotoExistById(photoId),
+    assertExist.assertUserExistById(userId),
+    assertExist.assertPhotoExistById(photoId),
     (user, photo) => {
       const result = {};
       result.user = user[0];
@@ -335,10 +317,15 @@ router.route('/like')
   Promise.join(
     merge.then(photoUpdateLike),
     merge.then(userUpdateLike),
-    () => {
-      res.status(200).send();
-      logRes(req.log, res);
-    });
+    (photo, user) => {
+      res.status(200).send({ photo, user });
+      log.logRes();
+    })
+  .catch((err) => {
+    errorHandler.handle(err, log, res);
+  });
+
+  return null;
 });
 
 module.exports = router;

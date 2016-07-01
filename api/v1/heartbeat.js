@@ -1,29 +1,14 @@
-'use strict';
-
-var express = require("express");
-var router = express.Router();
-
-/**
- * helper functions and objects
- */
-var helper = require("./helper.js");
-
-/**
- * log objects and functions
- */
-var logReqIdMiddleware = helper.logReqIdMiddleware;
-
-/**
- * Add reqId to each request
- */
-router.use(logReqIdMiddleware);
+const express = require('express');
+const router = new express.Router();
+const Log = require('../../utils/logger.js');
 
 /**
  * Heartbeat request.
  */
 router.route('/')
-.get(function(req, res) {
-  req.log.info("heartbeat");
+.get((req, res) => {
+  const log = new Log(req, res);
+  log.info('heartbeat');
   res.send();
 });
 

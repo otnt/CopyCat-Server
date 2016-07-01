@@ -31,19 +31,6 @@ function photoSerializer(photo) {
     referenceId: photo.referenceId,
   };
 }
-function editorSerializer(editor) {
-  return {
-    id: editor._id,
-    name: editor.name,
-  };
-}
-function albumSerializer(album) {
-  return {
-    id: album._id,
-    name: album.name,
-    imageUrl: album.imageUrl,
-  };
-}
 function userSerializer(user) {
   return {
     id: user._id,
@@ -92,22 +79,44 @@ const loggerGenerator = bunyan.createLogger({
     req: reqSerializer,
     res: resSerializer,
     photo: photoSerializer,
-    album: albumSerializer,
-    editor: editorSerializer,
     user: userSerializer,
   },
 });
 
-const newLog = function newLog() {
-  return loggerGenerator.child({ reqId: uuid.v1() });
-};
+class Log {
+  constructor(req, res) {
+    this.req = req;
+    this.res = res;
+    this.log = loggerGenerator.child({ reqId: uuid.v1() });
+  }
 
-newLog.logReq = function logReq(req) {
-  newLog.info({ req }, 'New request');
-};
+  logReq() {
+    this.log.info({ req: this.req }, 'New request');
+  }
 
-newLog.logRes = function logRes(res) {
-  newLog.info({ res }, 'New response');
-};
+  logRes() {
+    this.log.info({ res: this.res }, 'New response');
+  }
 
-module.exports.newLog = newLog;
+  error(...args) {
+    this.log.error(...args);
+  }
+
+  warn(...args) {
+    this.log.warn(...args);
+  }
+
+  info(...args) {
+    this.log.info(...args);
+  }
+
+  debug(...args) {
+    this.log.debug(...args);
+  }
+
+  trace(...args) {
+    this.log.trace(...args);
+  }
+}
+
+module.exports = Log;

@@ -1,4 +1,4 @@
-const models = require('../../../database/v0/models.js');
+const models = require('../../../database/models.js');
 const sprintf = require('sprintf-js').sprintf;
 
 function instagram(instagramInfo, callback) {

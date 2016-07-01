@@ -1,30 +1,18 @@
 const express = require('express');
 const router = new express.Router();
-const models = require('../../database/v0/models.js');
+const models = require('../../database/models.js');
 const ObjectId = require('mongodb').ObjectId;
 const config = require('../../config.js');
 const util = require('util');
 const Promise = require('bluebird');
+const Log = require('../../utils/logger.js');
 
+const errLib = require('../../utils/error.js');
+const errorHandler = errLib.errorHandler;
+const DocumentNotFoundError = errLib.DocumentNotFoundError;
 
-/**
- * Helper functions.
- */
-const helper = require('./helper.js');
-const PromiseReject = helper.PromiseReject;
-const errHandle = helper.errHandle;
-
-/**
- * log objects and functions
- */
-const logReq = helper.logReq;
-const logRes = helper.logRes;
-const logReqIdMiddleware = helper.logReqIdMiddleware;
-
-/**
- * Add reqId to each request
- */
-router.use(logReqIdMiddleware);
+const getTimelineStyleQuery = Promise.promisify(
+  require('../../utils/timelineHelper.js').getTimelineStyleQuery);
 
 /**
  * Get timeline.
@@ -38,17 +26,15 @@ router.use(logReqIdMiddleware);
  */
 router.route('/')
 .get((req, res) => {
-  logReq(req.log, req);
+  const log = new Log(req, res);
+  log.logReq();
 
   // get query
-  helper.getTimelineStyleQuery({
+  getTimelineStyleQuery({
     count: req.query.count,
     maxId: req.query.maxId,
     sinceId: req.query.sinceId,
-  },
-  req.log,
-  res)
-
+  })
   // fetch timeline
   .then((queryCondition) => {
     const newQueryCondition = queryCondition;
@@ -58,7 +44,7 @@ router.route('/')
       }
       newQueryCondition.range.ownerId = { $ne: new ObjectId(config.copycattestId) };
     }
-    req.log.info(queryCondition);
+    log.info(queryCondition);
 
     return models.Photo
     .find(queryCondition.range)
@@ -66,19 +52,14 @@ router.route('/')
     .limit(queryCondition.count)
     .populate('ownerId');
   })
-
   // respond
   .then((photos) => {
-    res.send(photos);
-    logRes(req.log, res);
+    res.status(200).send(photos);
+    log.logRes();
   })
-
   // error handling
   .catch((err) => {
-    if (!(err instanceof PromiseReject)) {
-      req.log.error({ err }, 'Unknown error');
-      errHandle.unknown(res, err);
-    }
+    errorHandler.handle(err);
   });
 });
 
@@ -87,50 +68,34 @@ router.route('/')
  */
 router.route('/:user')
 .get((req, res) => {
-  logReq(req.log, req);
+  const log = new Log(req, res);
+  log.logReq();
 
   const name = req.params.user;
-
-  // get query condition
-  const getQueryCondition = function getQueryCondition() {
-    return helper.getTimelineStyleQuery({
-      count: req.query.count,
-      maxId: req.query.maxId,
-      sinceId: req.query.sinceId,
-    },
-    req.log,
-    res)
-    .then((queryCondition) => {
-      const newQueryCondition = queryCondition;
-      if (!req.query.secret || (req.query.secret !== config.secret)) {
-        if (!newQueryCondition.range) {
-          newQueryCondition.range = {};
-        }
-        newQueryCondition.range.ownerId = { $ne: new ObjectId(config.copycattestId) };
-      }
-      req.log.info(queryCondition);
-      return queryCondition;
-    });
-  };
 
   const getFollowees = function getFollowees() {
     return models.User.find({ name })
     .then((user) => {
       if (!user || user.length === 0) {
         const msg = util.format('User %s not found', name);
-        req.log.warn(msg);
-        errHandle.notFound(msg);
-        throw new PromiseReject();
+        throw new DocumentNotFoundError(msg);
       }
       return user[0].followees;
     });
   };
 
   Promise.join(
-    getQueryCondition(),
+    getTimelineStyleQuery({
+      count: req.query.count,
+      maxId: req.query.maxId,
+      sinceId: req.query.sinceId,
+    }),
     getFollowees(),
-    (oldQueryCondition, followees) => {
-      const queryCondition = oldQueryCondition;
+    (_queryCondition, followees) => {
+      const queryCondition = _queryCondition;
+      if (!queryCondition.range) {
+        queryCondition.range = {};
+      }
       if (!queryCondition.range.ownerId) {
         queryCondition.range.ownerId = {};
       }
@@ -143,12 +108,13 @@ router.route('/:user')
     })
     // respond
     .then((photos) => {
-      res.send(photos);
-      logRes(req.log, res);
+      res.status(200).send(photos);
+      log.logRes();
     })
     // error handling
-    .catch((err) => errHandle.promiseCatchHanler(res, req.log, err));
+    .catch((err) => {
+      errorHandler.handle(err, log, res);
+    });
 });
-
 
 module.exports = router;

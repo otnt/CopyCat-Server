@@ -1,79 +1,69 @@
-var nodemailer = require('nodemailer');
-var express = require("express");
-var router = express.Router();
-var bodyParser = require('body-parser');
+const nodemailer = require('nodemailer');
+const express = require('express');
+const router = new express.Router();
+const bodyParser = require('body-parser');
+const Log = require('../../utils/logger.js');
+const util = require('util');
 
-/**
- * helper functions and objects
- */
-var helper = require("./helper.js");
-var errHandle = helper.errHandle;
-
-/**
- * log objects and functions
- */
-var logReq = helper.logReq;
-var logRes = helper.logRes;
-var logReqIdMiddleware = helper.logReqIdMiddleware;
-
-/**
- * Add reqId to each request
- */
-router.use(logReqIdMiddleware);
+const errLib = require('../../utils/error.js');
+const BadRequestError = errLib.BadRequestError;
+const errorHandler = errLib.errorHandler;
 
 /**
  * Create reusable transporter object using the default SMTP transport
  * This actually defines SENDER!!
  */
-var smtpConfig = {
-    host: 'smtp.gmail.com',
-    port: 465,
-    secure: true, // use SSL
-    auth: {
-        user: 'copycatsvteam@gmail.com',
-        pass: 'copycatteam'
-    }
+const smtpConfig = {
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // use SSL
+  auth: {
+    user: 'copycatsvteam@gmail.com',
+    pass: 'copycatteam',
+  },
 };
-var transporter = nodemailer.createTransport(smtpConfig);
+const transporter = nodemailer.createTransport(smtpConfig);
 
 /**
  * Post a feedback
  */
-router.use(bodyParser.json({limit: '5mb'}));//feed no more than 5mb
+router.use(bodyParser.json({ limit: '5mb' })); // Feed no more than 5mb
 router.route('/')
-.post(function(req, res) {
-    logReq(req.log, req);
+.post((req, res) => {
+  const log = new Log(req, res);
+  log.logReq();
 
-    if(!req.body.subject ||
-        !req.body.contact||
-        !req.body.text ) {
-            var msg = "Missing field, need contact, subject, text. Example: {'contact': '\"Jinping Xi\" <xidada@gmail.com>', 'subject':'Yo yo check now', 'text':'Jian bing guo zi lai yi tao'";
-            req.log.warn({req:req}, msg);
-            return errHandle.badRequest(res, msg);
-        }
+  if (!req.body.subject ||
+      !req.body.contact ||
+      !req.body.text) {
+    const msg = 'Missing field, need contact, subject, text. '
+      + 'Example: {contact: "Jinping Xi" <xidada@gmail.com>, '
+      + 'subject: "Yo yo check now", text: "Jian bing guo zi lai yi tao"';
+    return errorHandler.handle(new BadRequestError(msg), log, res);
+  }
 
-    //modify text and html to include contact
-    var text = req.body.text + "\n\nContact:\n" + req.body.contact + "\n";
+  // Modify text and html to include contact.
+  const text = util.format('%s\n\nContact:\n%s\n', req.body.text, req.body.contact);
 
-    // setup e-mail data with unicode symbols
-    var mailOptions = {
-        from: req.body.contact, // sender address, this field seems USELESS in our condition
+  // Setup e-mail data with unicode symbols.
+  const mailOptions = {
+    from: req.body.contact, // sender address, this field seems USELESS in our condition
     to: 'copycatsvteam@gmail.com', // list of receivers
     subject: req.body.subject, // Subject line
-    text: text, // plaintext body
+    text, // plaintext body
     //html: req.body.text // html body
-    };
+  };
 
-    // send mail with defined transport object
-    transporter.sendMail(mailOptions, function(err, info){
-        if(err){
-            var msg = "error when sending feedback email";
-            req.log.error({err:err}, msg);
-            return errHandle.unknown(res, msg);
-        }
-        req.log.info({info:info}, "Get new feedback");
-        return res.send(info.response);
-    });
+  // Send mail with defined transport object.
+  transporter.sendMail(mailOptions)
+  .then((info) => {
+    log.info({ info }, 'Get new feedback');
+    res.send(info);
+  })
+  .catch((err) => {
+    errorHandler.handle(err, log, res);
+  });
+  return null;
 });
 
 module.exports = router;

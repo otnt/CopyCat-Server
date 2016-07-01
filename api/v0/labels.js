@@ -12,7 +12,7 @@ router.route('/')
 
   const options = {
     // script path is from entry of node.js program, which is dir of server.js
-    scriptPath: './python_modules/',
+    scriptPath: './api/v0/python_modules/',
     args: [config.cloudVisionApiKey, imageUrl],
   };
 

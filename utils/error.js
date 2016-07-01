@@ -1,8 +1,27 @@
+const CastError = require('mongoose').CastError;
 /**
  * A customized Error that is used in Promise chain.
  * So that we could throw this Error to break out of Promise chain.
  */
 const ExtendableError = require('es6-error');
+
+/**
+ * Error handling.
+ * Given error type, respond object.
+ */
+function newErrorReturn(statusCode, msg) {
+  return { statusCode, msg };
+}
+
+const notFound = function notFound(res, errMsg) {
+  res.status(404).send(newErrorReturn(404, errMsg));
+};
+const unknown = function unknown(res, errMsg) {
+  res.status(500).send(newErrorReturn(500, errMsg));
+};
+const badRequest = function badRequest(res, errMsg) {
+  res.status(400).send(newErrorReturn(400, errMsg));
+};
 
 /**
  * Some self-defined extended error class.
@@ -11,7 +30,7 @@ const ExtendableError = require('es6-error');
  * SomePromise()
  * .then(() => {
  *   // Some thing wrong happens
- *   throw new MyError(sprintf('This is wrong %j.', errData), errData);
+ *   throw new MyError(util.format('This is wrong %j.', errData), errData);
  * })
  * .catch((err) => {
  *   if (err instanceof SomeErrorYouWantToExplicitlyHandle) {
@@ -21,43 +40,76 @@ const ExtendableError = require('es6-error');
  *   }
  * });
  */
-class ModelNotFoundError extends ExtendableError {
-  constructor(message, errData) {
-    super(message);
-    this.errData = errData;
-  }
-}
-module.exports.ModelNotFoundError = ModelNotFoundError;
 
 /**
- * Error handling.
- * Given error type, respond object.
+ * Base class for other error happened in Promise.
  */
-
-function newErrorReturn(code, errMsg) {
-  return { code, errMsg };
+class PromiseError extends ExtendableError {
+  handle() {
+    throw new Error('Method handle must be override.');
+  }
 }
 
-const errHandle = function errHandle() {};
-errHandle.notFound = (res, err) => {
-  res.status(404).send(newErrorReturn(404, sprintf('Not found: %j', err)));
-};
-errHandle.unknown = (res, err) => {
-  res.status(500).send(newErrorReturn(500, sprintf('Unknown error: %j', err)));
-};
-errHandle.badRequest = (res, err) => {
-  res.status(400).send(newErrorReturn(400, sprintf('Bad request: %j', err)));
-};
-// Error handler in catch block in promise chain.
-errHandle.promiseCatchHanler = (res, log, err) => {
-  if (err instanceof CastError) {
-    log.warn({ err }, 'Cast error');
-    errHandle.badRequest(res, err);
-  } else if (!(err instanceof PromiseReject)) {
-    log.error({ err }, 'Unknown error');
-    errHandle.unknown(res, err);
+/**
+ * Used when query is in bad format.
+ *
+ * Usual case:
+ * if (!req.query.somePara) {
+ *   return errHandler.handle(new BadRequestError(...));
+ * }
+ */
+class BadRequestError extends PromiseError {
+  handle(log, res) {
+    log.warn({ message: this.message }, 'BadRequestError');
+    badRequest(res, this.message);
   }
-  return null;
-};
-module.exports.errHandle = errHandle;
+}
+module.exports.BadRequestError = BadRequestError;
 
+/**
+ * Used when document is not found.
+ *
+ * Usual case:
+ * model.Model.find({_id:ObjectId(some id)})
+ * .then((document) => {
+ *   if (!document || document.length === 0) {
+ *     throw new DocumentNotFoundError(...);
+ *   }
+ * })
+ * .catch(...);
+ */
+class DocumentNotFoundError extends PromiseError {
+  handle(log, res) {
+    log.warn({ message: this.message }, 'DocumentNotFoundError');
+    notFound(res, this.message);
+  }
+}
+module.exports.DocumentNotFoundError = DocumentNotFoundError;
+
+class UnknownError extends PromiseError {
+  handle(log, res) {
+    log.warn({ message: this.message }, 'Unknown');
+    unknown(res, this.message);
+  }
+}
+module.exports.UnknownError = UnknownError;
+
+/**
+ * Error handler for log and respond to user
+ * based on error happened in Promise.
+ */
+class ErrorHandler {
+  handle(err, log, res) {
+    if (err instanceof PromiseError) {
+      err.handle(log, res);
+    } else if (err instanceof CastError) {
+      log.warn({ err }, 'CastError');
+      badRequest(res, err.message);
+    } else {
+      log.error({ err }, (err.prototype && err.property.name) || 'UnexpectedError');
+      unknown(res, err);
+    }
+  }
+}
+
+module.exports.errorHandler = new ErrorHandler();

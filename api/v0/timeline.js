@@ -1,6 +1,6 @@
 const express = require('express');
 const router = new express.Router();
-const models = require('../../database/v0/models.js');
+const models = require('../../database/models.js');
 const ObjectId = require('mongodb').ObjectId;
 const config = require('../../config.js');
 const util = require('util');
