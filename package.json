@@ -27,7 +27,8 @@
     "argparse": "^1.0.7",
     "mocha": "^2.5.0",
     "chai": "^3.5.0",
-    "es6-error": "^3.0.0"
+    "es6-error": "^3.0.0",
+    "clarifai": "^1.2.1"
   },
   "devDependencies": {
     "eslint": "^2.7.0",

@@ -2,30 +2,20 @@ const express = require('express');
 const router = new express.Router();
 const request = require('request');
 const util = require('util');
-const helper = require('../helper.js');
 const config = require('../../../config.js');
+const Log = require('../../../utils/logger.js');
 
 /**
- * helper functions and objects
+ * Error handler and self-defined error class.
  */
-const errHandle = helper.errHandle;
+const errLib = require('../../../utils/error.js');
+const errorHandler = errLib.errorHandler;
+const BadRequestError = errLib.BadRequestError;
 
 /**
  * Bluebird made promise easy
  */
 const Promise = require('bluebird');
-
-/**
- * log objects and functions
- */
-const logReq = helper.logReq;
-const logRes = helper.logRes;
-const logReqIdMiddleware = helper.logReqIdMiddleware;
-
-/**
- * Add reqId to each request
- */
-router.use(logReqIdMiddleware);
 
 /**
  * Given some search labels, separated by commas, return
@@ -49,18 +39,18 @@ router.use(logReqIdMiddleware);
  */
 router.route('/')
 .get((req, res) => {
-  logReq(req.log, req);
+  const log = new Log(req, res);
+  log.logReq();
 
   // Get all labels.
   if (!req.query.labels) {
     const msg = 'Missing labels.';
-    req.log.warn(msg);
-    return errHandle.badRequest(res, msg);
+    return errorHandler.handle(new BadRequestError(msg), log, res);
   }
   const labels = req.query.labels.split(',');
 
   const getUnsplashPhotos = function getUnsplashPhotos(_labels) {
-    req.log.info('Request photos from unsplash.com');
+    log.info('Request photos from unsplash.com');
     const labelString = _labels.join(',').replace(/\s+/g, '%20');
     return new Promise((resolve) => request({
       url: util.format('https://api.unsplash.com/photos/search?query=%s&client_id=%s', labelString, config.unsplashClientId),
@@ -85,7 +75,7 @@ router.route('/')
   };
 
   const getFlickrPhotos = function getFlickrPhotos(_labels) {
-    req.log.info('Request photos from flickr.com');
+    log.info('Request photos from flickr.com');
     const labelString = _labels.join(',').replace(/\s+/g, '%20');
     return new Promise((resolve) => request({
       url: util.format('https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=%s&tags=%s&tag_mode=all&sort=relevance&content_type=1&format=json&nojsoncallback=1', config.flickrApiKey, labelString),
@@ -120,7 +110,7 @@ router.route('/')
   };
 
   const get500PXPhotos = function get500PXPhotos(_labels) {
-    req.log.info('Request photos from flickr.com');
+    log.info('Request photos from flickr.com');
     const labelString = _labels.join('%20').replace(/\s+/g, '%20');
     return new Promise((resolve) => request({
       url: util.format('https://api.500px.com/v1/photos/search?term=%s&tags&image_size=600,440&rpp=100&sort=_score&consumer_key=%s', labelString, config.consumerKey500px),
@@ -166,9 +156,11 @@ router.route('/')
     })
   .then((photos) => {
     res.status(200).send(photos);
-    logRes(req.log, res);
+    log.logRes();
   })
-  .catch((err) => errHandle.promiseCatchHanler(res, req.log, err));
+  .catch((err) => {
+    errorHandler.handle(err, log, res);
+  });
 
   return null;
 });

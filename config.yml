@@ -60,6 +60,10 @@ anonymousUserId: '5750b56d7b2d281600a5af06'
 # google cloud vision api key
 cloudVisionApiKey: 'AIzaSyA8WAYHLpgXjB2ajsgscSiFlOl05-lTvEA'
 
+# clarifai access token
+clarifaiClientId: 'hmWiyrcb6MyQlAIazk2GQe0BECEOXXZsRwdPbvRn'
+clarifaiClientSecret: 'ie2kcx3_vHyK7lAnJetLqw5hfbMhEZ9m_C8g3976'
+
 # Flickr api key
 flickrApiKey: 'f91a179a286be8256e0ca7624f254642'
 

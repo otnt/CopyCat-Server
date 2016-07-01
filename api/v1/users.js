@@ -2,47 +2,34 @@ const express = require('express');
 const router = new express.Router();
 const models = require('../../database/models.js');
 const bodyParser = require('body-parser');
-const config = require('../../config.js');
 const util = require('util');
+const Log = require('../../utils/logger.js');
 
 /**
- * Helper functions
+ * Error handler and self-defined error class.
  */
-const helper = require('./helper.js');
-const errHandle = helper.errHandle;
-const PromiseReject = helper.PromiseReject;
-
-/**
- * log objects and functions
- */
-const logReq = helper.logReq;
-const logRes = helper.logRes;
-const logReqIdMiddleware = helper.logReqIdMiddleware;
-
-/**
- * Add reqId to each request
- */
-router.use(logReqIdMiddleware);
+const errLib = require('../../utils/error.js');
+const errorHandler = errLib.errorHandler;
+const DocumentNotFoundError = errLib.DocumentNotFoundError;
+const BadRequestError = errLib.BadRequestError;
+const UnknownError = errLib.UnknownError;
 
 /**
  * Get all users.
  */
 router.route('/all')
 .get((req, res) => {
-  logReq(req.log, req);
+  const log = new Log(req, res);
+  log.logReq();
 
   models.User.find()
   // respond
   .then((user) => {
     res.send(user);
-    req.log.info({ user }, 'Get all users.');
-    logRes(req.log, res);
+    log.info({ user }, 'Get all users.');
   })
   .catch((err) => {
-    if (!(err instanceof PromiseReject)) {
-      req.log.error({ err }, 'Unknown error');
-      errHandle.unknown(res, err);
-    }
+    errorHandler.handle(err, log, res);
   });
 });
 
@@ -51,32 +38,27 @@ router.route('/all')
  */
 router.route('/:id')
 .get((req, res) => {
-  logReq(req.log, req);
+  const log = new Log(req, res);
+  log.logReq();
 
   // find user using id
   const id = req.params.id;
   models.User.findById(id)
   // assure user exist
   .then((user) => {
-    if (!user) {
-      const msg = `User not found using id ${id}`;
-      req.log.warn(msg);
-      errHandle.notFound(res, msg);
-      throw new PromiseReject();
+    if (!user || user.length === 0) {
+      const msg = util.format('User not found using id: %s', id);
+      throw new DocumentNotFoundError(msg);
     }
     return user;
   })
   // respond
   .then((user) => {
-    res.send(user);
-    req.log.info({ user }, 'Get user.');
-    logRes(req.log, res);
+    res.status(200).send(user);
+    log.info({ user }, 'Get user.');
   })
   .catch((err) => {
-    if (!(err instanceof PromiseReject)) {
-      req.log.error({ err }, 'Unknown error');
-      errHandle.unknown(res, err);
-    }
+    errorHandler.handle(err, log, res);
   });
 });
 
@@ -85,7 +67,8 @@ router.route('/:id')
  */
 router.route('/:user/photos')
 .get((req, res) => {
-  logReq(req.log, req);
+  const log = new Log(req, res);
+  log.logReq();
 
   const name = req.params.user;
   models.User.find({ name })
@@ -93,9 +76,7 @@ router.route('/:user/photos')
   .then((user) => {
     if (!user || user.length === 0) {
       const msg = util.format('User not found using name %s', name);
-      req.log.warn(msg);
-      errHandle.notFound(res, msg);
-      throw new PromiseReject();
+      throw new DocumentNotFoundError(msg);
     }
     return user[0]._id;
   })
@@ -104,10 +85,11 @@ router.route('/:user/photos')
   // respond
   .then((photos) => {
     res.send(photos);
-    req.log.info({ photos }, 'Get photos.');
-    logRes(req.log, res);
+    log.info({ photos }, 'Get photos.');
   })
-  .catch((err) => errHandle.promiseCatchHanler(res, req.log, err));
+  .catch((err) => {
+    errorHandler.handle(err, log, res);
+  });
 });
 
 /**
@@ -115,7 +97,8 @@ router.route('/:user/photos')
  */
 router.route('/:follower/follow/:followee')
 .get((req, res) => {
-  logReq(req.log, req);
+  const log = new Log(req, res);
+  log.logReq();
 
   const follower = req.params.follower;
   const followee = req.params.followee;
@@ -131,11 +114,9 @@ router.route('/:follower/follow/:followee')
   .then((users) => {
     if (!users || users.length !== 2) {
       const msg = util.format('User %s or %s does not exist', follower, followee);
-      req.log.warn(msg);
-      errHandle.notFound(res, msg);
-      throw new PromiseReject();
+      throw new DocumentNotFoundError(msg);
     }
-    req.log.info('Found two user');
+    log.info({ users }, 'Found two user');
     return users;
   })
   // Assert follow relationship don't exist.
@@ -144,20 +125,17 @@ router.route('/:follower/follow/:followee')
     const followeeUser = users[0].name === followee ? users[0] : users[1];
     followerId = followerUser._id;
     followeeId = followeeUser._id;
-    req.log.info({ follower, followee, followerId, followeeId }, 'User info');
+    log.info({ follower, followee, followerId, followeeId }, 'User info');
     const followerUserFollowees = followerUser.followees.filter(
       (user) => String(user) === String(followeeId));
     const followeeUserFollowers = followeeUser.followers.filter(
       (user) => String(user) === String(followerId));
+
     if (followerUserFollowees.length !== 0 || followeeUserFollowers.length !== 0) {
       const msg = util.format('User %s and %s already have follow relationship',
                               follower, followee);
-      req.log.warn(msg);
-      errHandle.badRequest(res, msg);
-      throw new PromiseReject();
+      throw new BadRequestError(msg);
     }
-    req.log.info('Make sure these two users dont have follow relationship before');
-    return null;
   })
   // Update followee -> follower
   .then(() =>
@@ -173,12 +151,12 @@ router.route('/:follower/follow/:followee')
     ))
   // respond
   .then((followerUser) => {
-    res.status(201);
-    res.send(followerUser);
-    req.log.info('Follow relationship updated.');
-    logRes(req.log, res);
+    res.status(201).send(followerUser);
+    log.info('Follow relationship updated.');
   })
-  .catch((err) => errHandle.promiseCatchHanler(res, req.log, err));
+  .catch((err) => {
+    errorHandler.handle(err, log, res);
+  });
 });
 
 /**
@@ -187,34 +165,29 @@ router.route('/:follower/follow/:followee')
 router.use('/', bodyParser.json());
 router.route('/')
 .post((req, res) => {
-  logReq(req.log, req);
+  const log = new Log(req, res);
+  log.logReq();
 
   // User name must provided
   const name = req.body.name;
   if (!name) {
-    const msg = 'Missing user name';
-    req.log.info(msg);
-    errHandle.badRequest(res, msg);
+    const msg = 'Missing name field';
+    return errorHandler.handle(new BadRequestError(msg), log, res);
   }
 
   // Profile picture url could be default
-  const profilePictureUrl = req.body.profilePictureUrl ?
-    req.body.profilePictureUrl :
-    config.anonymousProfilePictureUrl;
+  const profilePictureUrl = req.body.profilePictureUrl;
   if (!profilePictureUrl) {
-    const msg = 'Missing user profile';
-    req.log.info(msg);
-    errHandle.badRequest(res, msg);
+    const msg = 'Missing profilePictureUrl field';
+    return errorHandler.handle(new BadRequestError(msg), log, res);
   }
 
   // User name must be unique
   models.User.find({ name })
   .then((user) => {
     if (user && user.length > 0) {
-      const msg = `User ${name} already exist`;
-      req.log.info(msg);
-      errHandle.badRequest(res, msg);
-      throw new PromiseReject();
+      const msg = util.format('User already exist: %s', name);
+      return errorHandler.handle(new BadRequestError(msg), log, res);
     }
     return null;
   })
@@ -224,28 +197,23 @@ router.route('/')
   )
   // Assure user create succeed
   .then((user) => {
-    if (!user) {
+    if (!user || user.length === 0) {
       const msg = 'Create user failed';
-      req.log.warn(msg);
-      errHandle.badRequest(res, msg);
-      throw new PromiseReject();
+      throw new UnknownError(msg);
     }
     return user;
   })
   // Respond
   .then((user) => {
-    res.status(201);
-    res.send(user);
-    req.log.info({ user }, 'User created');
-    logRes(req.log, res);
+    res.status(201).send(user);
+    log.info({ user }, 'User created');
   })
   // Error handler
   .catch((err) => {
-    if (!(err instanceof PromiseReject)) {
-      req.log.error({ err }, 'Unknown error');
-      errHandle.unknown(res, err);
-    }
+    errorHandler.handle(err, log, res);
   });
+
+  return null;
 });
 
 module.exports = router;
