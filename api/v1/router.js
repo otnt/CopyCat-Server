@@ -20,5 +20,6 @@ router.use('/reports', reports);
 router.use('/users', users);
 router.use('/smart', smartExperiment);
 router.use('/search', searchExperiment);
+router.use('/crawl', require('./crawl.js'));
 
 module.exports = router;

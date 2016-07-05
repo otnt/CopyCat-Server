@@ -28,7 +28,8 @@
     "mocha": "^2.5.0",
     "chai": "^3.5.0",
     "es6-error": "^3.0.0",
-    "clarifai": "^1.2.1"
+    "clarifai": "^1.2.1",
+    "cheerio": "^0.20.0"
   },
   "devDependencies": {
     "eslint": "^2.7.0",

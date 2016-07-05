@@ -100,14 +100,18 @@ module.exports.UnknownError = UnknownError;
  */
 class ErrorHandler {
   handle(err, log, res) {
-    if (err instanceof PromiseError) {
-      err.handle(log, res);
-    } else if (err instanceof CastError) {
-      log.warn({ err }, 'CastError');
-      badRequest(res, err.message);
+    if (!log || !res) {
+      log.debug('errorHandler.handle() need log and res as second and third parameters');
     } else {
-      log.error({ err }, (err.prototype && err.property.name) || 'UnexpectedError');
-      unknown(res, err);
+      if (err instanceof PromiseError) {
+        err.handle(log, res);
+      } else if (err instanceof CastError) {
+        log.warn({ err }, 'CastError');
+        badRequest(res, err.message);
+      } else {
+        log.error({ err }, (err.prototype && err.property.name) || 'UnexpectedError');
+        unknown(res, err);
+      }
     }
   }
 }
