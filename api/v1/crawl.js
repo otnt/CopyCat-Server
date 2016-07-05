@@ -63,7 +63,7 @@ router.route('/')
     const images2 = $('div').filter((i, div) =>
       $(div).attr('background-image') !== null
     );
-    console.log(images2);
+    console.log('image2', images2);
 
     log.info({ imageUrls }, 'Get crawl image urls.');
     return imageUrls;
