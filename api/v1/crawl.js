@@ -49,7 +49,7 @@ router.route('/')
   // 1. <img src='...' />
   // 2. <div background-image: url('...')/>
   // getAsync(util.format('http://192.168.99.102:8050/render.html?url=%s&timeout=30&wait=5', _url))
-  getAsync(util.format('http://localhost:8050/render.html?url=%s&timeout=30&wait=5', _url))
+  getAsync(util.format('http://splash:8050/render.html?url=%s&timeout=30&wait=5', _url))
   .then((responseBody) => {
     const body = responseBody.body;
     const $ = cheerio.load(body);
