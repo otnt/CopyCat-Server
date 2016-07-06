@@ -71,3 +71,12 @@ unsplashClientId: '6aeca0a320939652cbb91719382190478eee706cdbd7cfa8774138a00dd81
 
 # Search photo number maximum
 maximumSearchPhotoNumber: 50
+
+# Crawl images from a website
+splashCrawlerHttpPort: 8050 # default setting of official Splash docker image
+splashCrawlerHttpsPort: 8051 # default setting of official Splash docker image
+splashCrawlerTcpPort: 5023 # default setting of official Splash docker image
+splashCrawlerTimeout: 30 # seconds
+splashCrawlerWait: 0.5 # seconds
+crawlerImageMinimumWidth: 200 # px
+crawlerImageMinHeight: 150 # px
