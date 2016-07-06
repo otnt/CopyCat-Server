@@ -7,8 +7,6 @@ const cheerio = require('cheerio');
 const util = require('util');
 const config = require('../../config');
 const url = require('url');
-const fs = require('fs');
-const phantom = require('phantom');
 
 /**
  * Error handler and self-defined error class.
@@ -32,6 +30,14 @@ const gm = require('gm').subClass({
   imageMagick: true,
 });
 
+/**
+ * post http://hostname:port/crawl
+ * {
+ *   url: 'url to crawl',
+ *   minHeight(optional): 300,
+ *   minWidth(optional): 400,
+ * }
+ */
 router.use(bodyParser.json());
 router.route('/')
 .post((req, res) => {
@@ -115,26 +121,24 @@ router.route('/')
   // Small images are very likely to be icon, navigation image etc.
   .filter((image) => {
     const size = image.size;
-    return size.width >= config.crawlerImageMinimumWidth || size.height >= config.crawlerImageMinHeight;
+    const minWidth = req.body.mimWidth || config.crawlerImageMinimumWidth;
+    const minHeight = req.body.minHeight || config.crawlerImageMinHeight;
+    return size.width >= minWidth && size.height >= minHeight;
   })
-
-  .map((image) => image.imageUrl)
   // Upload these images to S3.
-  // .map((image) => {
-  //   // const size = image.size;
-  //   // const imageUrl = image.imageUrl;
-  //   // log.info({ imageUrl, size }, 'Crawl new image.');
+  .map((image) => {
+    const size = image.size;
+    const imageUrl = image.imageUrl;
+    log.info({ imageUrl, size }, 'Crawl new image.');
 
-  //   // return postAsync({
-  //   //   url: util.format('http://localhost:%d/api/v1/photos', config.httpPort),
-  //   //   json: {
-  //   //     data: image.body,
-  //   //   },
-  //   // })
-  //   // .then((responseBody) => responseBody.body.imageUrl);
-
-  //   return '';
-  // })
+    return postAsync({
+      url: util.format('http://localhost:%d/api/v1/photos', config.httpPort),
+      json: {
+        data: image.body,
+      },
+    })
+    .then((responseBody) => responseBody.body.imageUrl);
+  })
   // Return results.
   .then((imageUrls) => {
     log.info(imageUrls, 'Crawl new images.');
