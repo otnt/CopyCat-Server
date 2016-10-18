@@ -4,7 +4,7 @@
 # Format is follow YAML standard.
 
 # Load Balancer
-loadBalancer : 'CopyCatLoadBalancer-426137485.us-east-1.elb.amazonaws.com'
+loadBalancer : 
 
 # MongoDB replica set address
 replicaAddr: !!seq
@@ -21,8 +21,8 @@ timelineQueryDefaultCount: 20
 
 # AWS credential
 credential: !!map
-  accessKeyId: AKIAIMLE76URPMCTIAXA
-  secretAccessKey: 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
+  accessKeyId:
+  secretAccessKey:
   region: us-east-1
 
 # server port
@@ -35,8 +35,8 @@ s3ImageBucket: !!map
 
 # instagram
 instagram: !!map
-  clientId: 'ea2679a4073c4809919836b18e91b257'
-  clientSecret : '87e2890a23fd4defb7fc2cfc76f43d15'
+  clientId: ''
+  clientSecret : ''
   grantType : 'authorization_code'
   redirectURL: 'http://copycatloadbalancer-426137485.us-east-1.elb.amazonaws.com/api/v0/instagram/login'
 
@@ -54,20 +54,20 @@ anonymousProfilePictureUrl: 'https://pbs.twimg.com/profile_images/47131658999680
 anonymousUserId: '5750b56d7b2d281600a5af06'
   
 # google cloud vision api key
-cloudVisionApiKey: 'AIzaSyA8WAYHLpgXjB2ajsgscSiFlOl05-lTvEA'
+cloudVisionApiKey: ''
 
 # clarifai access token
-clarifaiClientId: 'hmWiyrcb6MyQlAIazk2GQe0BECEOXXZsRwdPbvRn'
-clarifaiClientSecret: 'ie2kcx3_vHyK7lAnJetLqw5hfbMhEZ9m_C8g3976'
+clarifaiClientId: ''
+clarifaiClientSecret: ''
 
 # Flickr api key
-flickrApiKey: 'f91a179a286be8256e0ca7624f254642'
+flickrApiKey: ''
 
 # 500px consumer key
-consumerKey500px: '1f9RPmVvLJIhtdq6CsSiVUVuCQsaNmeqy0r79A6b'
+consumerKey500px: ''
 
 # Unsplash client id
-unsplashClientId: '6aeca0a320939652cbb91719382190478eee706cdbd7cfa8774138a00dd81fab'
+unsplashClientId: ''
 
 # Search photo number maximum
 maximumSearchPhotoNumber: 50
